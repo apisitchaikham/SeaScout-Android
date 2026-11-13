@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.40-heat-default-2026-11-13">
+<meta name="sea-scout-build" content="standalone-r14.15.41-fast-heat-2026-11-13">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.40 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.41 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -734,7 +734,7 @@ async function seaResilientMarine(b,m){
 </head>
 <body>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.40 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.41 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1023,8 +1023,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.40-heat-default-2026-11-13
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.40-heat-default-2026-11-13';
+// SEA_SCOUT_BUILD=standalone-r14.15.41-fast-heat-2026-11-13
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.41-fast-heat-2026-11-13';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -1138,6 +1138,9 @@ const SP_CAT_TH={u:'ceph',s:'ceph',h:'ceph',o:'ceph',m:'pel',k:'pel',e:'pel',b:'
 SP.forEach(s=>{if(!s.cat)s.cat=SP_CAT_TH[s.id]||'pel';if(!s.rg&&!s.ar)s.ar=[[-35,35,30,180]];}); // Gulf-of-Thailand species: Indo-West Pacific
 const SP_CATS=[['pel','ปลาผิวน้ำ/ทะเลเปิด'],['reef','ปลาแนวหิน/ปะการัง/ซากเรือ'],['dem','ปลาหน้าดิน'],['coast','ปลาชายฝั่ง/ปากแม่น้ำ'],['ray','ปลากระเบน'],['ceph','หมึก']];
 const spIsId=m=>SP.some(q=>q.id===m);
+let SP_SEL='all'; // r14.15.41: selected species, kept in a variable (reading the DOM a million times per redraw was slow)
+const SP_RANGE_CACHE=new WeakMap();
+function spRangeAtScan(sp){if(typeof G==='undefined'||!G)return spInRange(sp);let c=SP_RANGE_CACHE.get(G);if(!c){c=new Map();SP_RANGE_CACHE.set(G,c);}let r=c.get(sp.id);if(r===undefined){r=spInRange(sp);c.set(sp.id,r);}return r;}
 function spWhere(v){
  if(v&&Number.isFinite(v.lat)&&Number.isFinite(v.lon))return v;
  try{if(typeof cur!=='undefined'&&cur&&Number.isFinite(cur.lat))return cur;}catch(_){}
@@ -1161,7 +1164,7 @@ function spActive(sp){
  const score0=score;
  score=function(sp,v){
   const r=score0(sp,v);
-  if(!spInRange(sp,v)){r.v=0;r.outOfRange=true;}
+  if(!((v&&Number.isFinite(v.lat))?spInRange(sp,v):spRangeAtScan(sp))){r.v=0;r.outOfRange=true;}
   else if(typeof v?.sst==='number'&&Number.isFinite(v.sst)&&(v.sst<sp.t[0]||v.sst>sp.t[3])){r.v=0;r.tooHotCold=true;}
   // r14.15.39: depth is a hard limit, like temperature: adults are not found far shallower or deeper than their range.
   // Between half the minimum depth and the minimum, the habitat is a nursery/juvenile zone → flagged "mostly small".
@@ -1169,10 +1172,12 @@ function spActive(sp){
    if(v.depth<sp.z[0]*.6||v.depth>sp.z[1]*1.6){r.v=0;r.depthOut=true;}
    else if(v.depth<sp.z[0]){r.small=true;r.v=Math.round(r.v*.7);}
   }
-  if(sp.prot){let sel='';try{sel=$('sp').value;}catch(_){}if(sel!==sp.id){r.v=0;r.protectedHidden=true;}}
+  if(sp.prot&&SP_SEL!==sp.id){r.v=0;r.protectedHidden=true;}
   return r;
  };
 }
+
+try{SP_SEL=$('sp').value||'all';$('sp').addEventListener('change',()=>{SP_SEL=$('sp').value;});}catch(_){}
 
 const clamp=x=>Number.isFinite(x)?Math.max(0,Math.min(1,x)):.5;
 const trap=(x,[a,b,c,d])=>x<a||x>d?0:x<b?(x-a)/(b-a):x<=c?1:(d-x)/(d-c);
@@ -1416,9 +1421,10 @@ function score(sp,v){
  return{v:Math.round(value),T,D,Z,W,C,P,F,S,K,coverage};
 }
 function shown(v){
- const m=$('sp').value;let best=null,bi=0;
+ const m=SP_SEL;let best=null,bi=0;
  SP.forEach((sp,i)=>{
   if(!spActive(sp)&&sp.id!==m)return;
+  if(sp.id!==m){const t=v.sst,d=v.depth;if(typeof t==='number'&&t===t&&(t<sp.t[0]||t>sp.t[3]))return;if(typeof d==='number'&&d===d&&Array.isArray(sp.z)&&(d<sp.z[0]*.6||d>sp.z[1]*1.6))return;if(sp.prot)return;}
   if(m==='squid'&&sp.g!=='หมึก')return;if(m==='fish'&&sp.g!=='ปลา')return;if(spIsId(m)&&sp.id!==m)return;
   const s=score(sp,v);if(!best||s.v>best.v){best=s;bi=i}});
  return best?{v:best.v,i:bi}:{v:0,i:0};
@@ -2245,7 +2251,7 @@ function drawTile(cv,c){
    const lon=lonW+(lonE-lonW)*(sxi+.5)/R,v=sampleAt(lat,lon);
    if(!v||v.alpha<=0)continue;
    let q;
-   if(lay==='score'){const sv=shown(v).v;q=ramp(SC,sv);if(v.alpha>.5)bnd[sy*R+sxi]=scBand(sv);}
+   if(lay==='score'){let sv=G.scT?bil(G.scT,(lat-G.lats[0])/G.dLat,(lon-G.lons[0])/G.dLon):NaN;if(sv!==sv)sv=0;q=ramp(SC,sv);if(v.alpha>.5)bnd[sy*R+sxi]=scBand(sv);}
    else if(lay==='temp')q=Number.isFinite(v.sst)?ramp(TP,(v.sst-HS.tmin)/(HS.tmax-HS.tmin)):[0,0,0,0];
    else if(lay==='chl')q=v.chl==null?[0,0,0,0]:ramp(CP,clamp((Math.log10(v.chl)+1.5)/2.5));
    else q=v.depth==null?[0,0,0,0]:ramp(DP,Math.min(1,v.depth/HS.dcap));
@@ -2279,6 +2285,7 @@ function render(){
  // Fix r14.15.7: tmin/tmax start at ±1e9 (finite) so a missing SST field must be detected by tmin<=tmax.
  ds.sort((a,b)=>a-b);const hasSst=tmin<=tmax&&Number.isFinite(tmin)&&Number.isFinite(tmax);if(hasSst&&tmax-tmin<1){tmin-=.5;tmax+=.5}
  HS={tmin:hasSst?tmin:0,tmax:hasSst?tmax:1,hasSst,dcap:ds.length?Math.max(10,ds[Math.floor(ds.length*.95)]):50};
+ if(!G.scT||G.scT.length!==G.sc.length)G.scT=new Float32Array(G.sc.length);for(let k=0;k<G.sc.length;k++)G.scT[k]=(G.inner[k]&&!G.land[k])?G.sc[k]:NaN;
  heat.redraw();markers();arrows();legend();showZones();
 }
 function markers(){
@@ -5704,10 +5711,10 @@ const SeaProxy=(()=>{
 #seaHeatTime .ht1{display:flex;align-items:center;gap:6px;flex:1 1 100%;min-width:0}
 #seaHeatTime input{flex:1;min-width:70px;accent-color:var(--accent);height:30px}
 #seaHeatTime button{min-width:42px;min-height:38px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:15px}
-#seaHeatTime .htLay{min-width:auto;padding:0 10px;font-size:13px;white-space:nowrap}
+#seaHeatTime .htLay{flex:0 0 auto;min-width:auto;min-height:34px;padding:0 10px;font-size:13px;white-space:nowrap}
 #seaHeatTime .htLay[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 #seaHeatTime .htLbl{font-weight:700;font-size:12.5px;white-space:nowrap}
-#seaHeatTime .htSub{flex:1 1 100%;color:var(--mute);font-size:11px;line-height:1.3}
+#seaHeatTime .htSub{flex:1 1 150px;color:var(--mute);font-size:11px;line-height:1.3}
 #seaHeatTime.dim{opacity:.6}`;
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
  const HT={g:null,wave0:null,i:0,play:null};
@@ -5722,14 +5729,17 @@ const SeaProxy=(()=>{
   let box=document.getElementById('seaHeatTime');
   if(!box){const m=document.getElementById('map');if(!m||!m.parentNode)return null;
    box=document.createElement('div');box.id='seaHeatTime';
-   box.innerHTML='<div class="ht1"><span>🕒</span><button type="button" class="htPlay" aria-label="เล่น/หยุด">▶</button><input type="range" min="0" max="0" step="1" value="0" aria-label="เลือกเวลาของฮีตแมป"><span class="htLbl">ตอนนี้</span><button type="button" class="htLay">🎣 ฮีตแมป</button></div><div class="htSub">ฮีตแมปตามเวลา · รอพยากรณ์คลื่น</div>';
+   box.innerHTML='<div class="ht1"><span>🕒</span><button type="button" class="htPlay" aria-label="เล่น/หยุด">▶</button><input type="range" min="0" max="0" step="1" value="0" aria-label="เลือกเวลาของฮีตแมป"><span class="htLbl">ตอนนี้</span></div><button type="button" class="htLay">🎣 ฮีตแมป</button><div class="htSub">ฮีตแมปตามเวลา · รอพยากรณ์คลื่น</div>';
    m.parentNode.appendChild(box);['click','dblclick','mousedown','touchstart','wheel','pointerdown'].forEach(ev=>box.addEventListener(ev,e=>e.stopPropagation(),{passive:true}));
-   const r=box.querySelector('input');r.oninput=()=>apply(+r.value);
+   const r=box.querySelector('input');let deb=0;r.oninput=()=>{const S=slots(),i=+r.value;box.querySelector('.htLbl').textContent=label(S[i],i);clearTimeout(deb);deb=setTimeout(()=>apply(i),140);};r.onchange=()=>{clearTimeout(deb);apply(+r.value);};
    box.querySelector('.htLay').onclick=()=>{const l=$('lay');if(!l)return;HT.userLay=true;
     if(l.value==='score'){l.value='depth';}else{if(!prem()){try{status('🔒 ฮีตแมปสำหรับสมาชิก Premium',true);}catch(_){}return;}l.value='score';}
     try{l.onchange&&l.onchange();}catch(_){}refreshUi();};
-   box.querySelector('.htPlay').onclick=()=>{if(HT.play){clearInterval(HT.play);HT.play=null;box.querySelector('.htPlay').textContent='▶';return;}
-    box.querySelector('.htPlay').textContent='⏸';HT.play=setInterval(()=>{const S=slots();if(!S.length)return;apply((HT.i+1)%S.length);},1200);};
+   box.querySelector('.htPlay').onclick=()=>{if(HT.play){clearTimeout(HT.play);HT.play=null;box.querySelector('.htPlay').textContent='▶';return;}
+    box.querySelector('.htPlay').textContent='⏸';
+    // r14.15.41: next frame only after the previous one has been drawn (no pile-up on slow phones)
+    const step=()=>{if(!HT.play)return;const S=slots();if(!S.length){HT.play=setTimeout(step,800);return;}const t0=performance.now();apply((HT.i+1)%S.length);const took=performance.now()-t0;HT.play=setTimeout(step,Math.max(700,took+500));};
+    HT.play=setTimeout(step,50);};
   }
   return box;
  }
@@ -5737,7 +5747,7 @@ const SeaProxy=(()=>{
  function refreshUi(){
   const box=ui();if(!box)return;const S=slots(),r=box.querySelector('input');
   try{const on=$('lay').value==='score';const b=box.querySelector('.htLay');b.textContent=on?'🗺️ ความลึก':'🎣 ฮีตแมป';b.setAttribute('aria-pressed',on);}catch(_){}
-  if(!prem()){if(HT.play){clearInterval(HT.play);HT.play=null;}r.disabled=true;r.value=0;r.max=0;box.querySelector('.htPlay').disabled=true;box.querySelector('.htPlay').textContent='🔒';
+  if(!prem()){if(HT.play){clearTimeout(HT.play);HT.play=null;}r.disabled=true;r.value=0;r.max=0;box.querySelector('.htPlay').disabled=true;box.querySelector('.htPlay').textContent='🔒';
    box.hidden=typeof G==='undefined'||!G;box.classList.add('dim');box.querySelector('.htLbl').textContent='🔒 Premium';
    box.querySelector('.htSub').textContent='ฮีตแมปตามเวลา (ล่วงหน้า 7 วัน) สำหรับสมาชิก Premium';return;}
   r.disabled=false;box.querySelector('.htPlay').disabled=false;if(!HT.play)box.querySelector('.htPlay').textContent='▶';
@@ -5769,7 +5779,7 @@ const SeaProxy=(()=>{
  window.seaEnsureHeat=ensureHeat;
  // a new scan brings a new grid: back to "now"
  const render0=render;
- render=function(){if(typeof G!=='undefined'&&G&&HT.g&&HT.g!==G){HT.g=null;HT.wave0=null;HT.i=0;if(HT.play){clearInterval(HT.play);HT.play=null;const b=document.querySelector('#seaHeatTime .htPlay');if(b)b.textContent='▶';}setTimeout(refreshUi,0);}return render0.apply(this,arguments);};
+ render=function(){if(typeof G!=='undefined'&&G&&HT.g&&HT.g!==G){HT.g=null;HT.wave0=null;HT.i=0;if(HT.play){clearTimeout(HT.play);HT.play=null;const b=document.querySelector('#seaHeatTime .htPlay');if(b)b.textContent='▶';}setTimeout(refreshUi,0);}return render0.apply(this,arguments);};
  addEventListener('seaweek',refreshUi);
  try{const ch0=ssEntChanged;ssEntChanged=function(){const r=ch0.apply(this,arguments);try{const pr=prem();if(!pr&&HT.i){apply(0);}if(pr&&!HT.wasPrem)HT.userLay=false;HT.wasPrem=pr;if(pr)ensureHeat();else refreshUi();}catch(_){}return r;};}catch(_){}
  if(document.readyState==='loading')addEventListener('DOMContentLoaded',refreshUi);else refreshUi();
