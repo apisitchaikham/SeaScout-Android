@@ -4,3 +4,5 @@ node_modules/
 keystore.properties
 .DS_Store
 www/eot20/
+site/
+Claude outputs/

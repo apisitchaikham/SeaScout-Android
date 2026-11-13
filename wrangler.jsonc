@@ -1,0 +1,7 @@
+// Cloudflare Workers Builds: the Sea Scout website (static files only, no Worker code).
+// Build command:  bash tools/build_site.sh     Deploy command: npx wrangler deploy
+{
+  "name": "seascout",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./site" }
+}

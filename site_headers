@@ -1,0 +1,18 @@
+/eot20/t/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/octet-stream
+
+/eot20/*.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400
+
+/index.html
+  Cache-Control: public, max-age=300
+
+/hazards/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400
+
+/lib/*
+  Cache-Control: public, max-age=2592000
