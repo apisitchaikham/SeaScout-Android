@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.25-mobile3d-2026-11-13">
+<meta name="sea-scout-build" content="standalone-r14.15.26-apk-assets-2026-11-13">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.25 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.26 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -492,7 +492,10 @@ const SeaWorldTide=(()=>{
  async function getTile(s,w){
   const id=s+'_'+w;if(tiles.has(id))return tiles.get(id);
   const b=base(),ck='world-tile2|'+b+id;let buf=await dbGet(ck);
-  if(!buf){try{const r=await fetch(b+'t/'+id+'.bin.gz');if(r.status===404){tiles.set(id,[]);return[];}if(!r.ok)throw new Error('HTTP '+r.status);buf=await gunzip(await r.arrayBuffer());dbPut(ck,buf);}catch(e){return null;}}
+  if(!buf){try{let r=await fetch(b+'t/'+id+'.bin.gz');
+   // Android app builds unpack *.gz assets and drop the .gz extension: try the plain name too
+   if(!r.ok){const r2=await fetch(b+'t/'+id+'.bin').catch(()=>null);if(r2&&r2.ok)r=r2;}
+   if(r.status===404){tiles.set(id,[]);return[];}if(!r.ok)throw new Error('HTTP '+r.status);buf=await gunzip(await r.arrayBuffer());dbPut(ck,buf);}catch(e){return null;}}
   const nodes=decode(buf);tiles.set(id,nodes);return nodes;
  }
  // Tiles are stored gzip-compressed (10°x10° cells keep the site under 1,000 files). Some hosts already send
@@ -639,7 +642,7 @@ const SeaAwois=(()=>{
  async function load(){if(rows)return rows;if(p)return p;p=(async()=>{
    const base=(typeof SeaWorldTide!=='undefined'&&SeaWorldTide.base())?SeaWorldTide.base().replace(/eot20\/?$/,'awois/'):(/^https?:$/.test(location.protocol)?new URL('awois/',location.href).href:'');
    if(!base)return[];let d=null;try{d=await tideDbGet('awois|v1');}catch(_){}
-   if(!d){const r=await fetch(base+'awois.json.gz');if(!r.ok)return[];let u=new Uint8Array(await r.arrayBuffer());if(u[0]===0x1f&&u[1]===0x8b)u=new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());d=JSON.parse(new TextDecoder().decode(u));try{await tideDbPut('awois|v1',d);}catch(_){}}
+   if(!d){let r=await fetch(base+'awois.json.gz').catch(()=>null);if(!r||!r.ok)r=await fetch(base+'awois.json').catch(()=>null);if(!r||!r.ok)return[];let u=new Uint8Array(await r.arrayBuffer());if(u[0]===0x1f&&u[1]===0x8b)u=new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());d=JSON.parse(new TextDecoder().decode(u));try{await tideDbPut('awois|v1',d);}catch(_){}}
    rows=(d.rows||[]).map(r=>({id:r[0],kind:SEA_HAZ_KINDS[r[1]],lat:r[2],lon:r[3],name:r[4]||'',depthM:r[5]??null,waterLevel:'',category:r[7]||'',isArea:false,src:'NOAA AWOIS'}));return rows;})();return p;}
  async function hazards(bb){if(!inUS(bb))return[];try{return(await load()).filter(h=>h.lat>=bb.s&&h.lat<=bb.n&&h.lon>=bb.w&&h.lon<=bb.e);}catch(_){return[];}}
  return{hazards};
@@ -731,7 +734,7 @@ async function seaResilientMarine(b,m){
 </head>
 <body>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.25 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.26 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1020,8 +1023,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.25-mobile3d-2026-11-13
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.25-mobile3d-2026-11-13';
+// SEA_SCOUT_BUILD=standalone-r14.15.26-apk-assets-2026-11-13
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.26-apk-assets-2026-11-13';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
