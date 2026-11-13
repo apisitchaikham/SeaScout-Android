@@ -1,7 +1,10 @@
-// Cloudflare Workers Builds: the Sea Scout website (static files only, no Worker code).
+// Cloudflare Workers Builds: the Sea Scout website.
 // Build command:  bash tools/build_site.sh     Deploy command: npx wrangler deploy
+// Static files in ./site are served directly; worker/site.js only handles /api/crash (anonymous error reports).
 {
   "name": "seascout",
   "compatibility_date": "2026-11-01",
-  "assets": { "directory": "./site" }
+  "main": "worker/site.js",
+  "assets": { "directory": "./site", "binding": "ASSETS" },
+  "observability": { "enabled": true }
 }
