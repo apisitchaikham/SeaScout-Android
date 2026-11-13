@@ -112,7 +112,76 @@ def assemble(ids):
     print(f'hazards.zip: {len(blocks)} blocks, {count} points, missing tiles {missing}', flush=True)
 
 
+UKHO_WFS = 'https://ows.emodnet-humanactivities.eu/wfs'
+
+
+def ukho_wrecks():
+    """UK Hydrographic Office worldwide wreck locations, published via EMODnet Human Activities.
+    Open Government Licence v3.0 (commercial use allowed with attribution)."""
+    rows, start, page = [], 0, 10000
+    while True:
+        q = urllib.parse.urlencode({'service': 'WFS', 'version': '2.0.0', 'request': 'GetFeature', 'typeNames': 'emodnet:wwshipwrecks',
+                                    'outputFormat': 'application/json', 'count': page, 'startIndex': start, 'sortBy': 'wreck_id'})
+        req = urllib.request.Request(UKHO_WFS + '?' + q, headers={'User-Agent': UA})
+        for attempt in range(4):
+            try:
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    js = json.loads(r.read()); break
+            except Exception as ex:  # noqa: BLE001
+                if attempt == 3: raise
+                print(f'  retry page {start}: {ex}', flush=True); time.sleep(10 * (attempt + 1))
+        feats = js.get('features') or []
+        for f in feats:
+            g, p = f.get('geometry') or {}, f.get('properties') or {}
+            c = g.get('coordinates') or []
+            if g.get('type') != 'Point' or len(c) < 2: continue
+            lon, lat = float(c[0]), float(c[1])
+            if not (-90 <= lat <= 90 and -180 <= lon <= 180): continue
+            try: depth = float(str(p.get('depth')).replace(',', '.'))
+            except (TypeError, ValueError): depth = None
+            wl = str(p.get('water_leve') or '').lower()
+            wl = 'covers' if 'cover' in wl else 'awash' if 'awash' in wl else 'dry' if 'dry' in wl else 'submerged' if 'submerg' in wl or 'under water' in wl else ''
+            name = str(p.get('name') or '')
+            name = '' if name.lower() in ('n/a', 'unknown', 'none') else name
+            cat = str(p.get('wreck_cate') or '')
+            rows.append(['u' + str(p.get('wreck_id') or f.get('id')), KINDS.index('wreck'), round(lat, 5), round(lon, 5), name,
+                         depth, wl, '' if cat == 'n/a' else cat, 0])
+        print(f'UKHO page {start}: {len(feats)} (total {len(rows)})', flush=True)
+        if len(feats) < page: break
+        start += page
+        time.sleep(2)
+    return rows
+
+
+def assemble_rows(rows, source, licence):
+    D, groups = 20, {}
+    for r in rows:
+        bid = f'{int((r[2] // D) * D)}_{int((r[3] // D) * D)}'
+        groups.setdefault(bid, {})[r[0]] = r
+    blocks, count = [], 0
+    with zipfile.ZipFile(OUT, 'w', zipfile.ZIP_STORED) as z:
+        for bid, g in sorted(groups.items()):
+            blocks.append(bid); count += len(g)
+            z.writestr(f'hazards/b/{bid}.json.gz', gzip.compress(json.dumps({'rows': list(g.values())}, separators=(',', ':')).encode(), 9))
+        z.writestr('hazards/index.json', json.dumps({'schema': 'SeaScout-Hazards-v1', 'built': datetime.date.today().isoformat(),
+            'blockDeg': D, 'blocks': blocks, 'count': count, 'missingTiles': 0, 'source': source, 'license': licence, 'kinds': KINDS}))
+    print(f'hazards.zip: {len(blocks)} blocks, {count} points', flush=True)
+
+
 def main():
+    # r14.15.42b: the public Overpass servers are not meant for bulk downloads (502 "at capacity"),
+    # so the pack is built from a published bulk dataset instead. Rocks/reefs from OpenStreetMap stay live per scan
+    # (Open Waters Seamap tiles, then a small Overpass query for the scanned box only).
+    if '--overpass' in sys.argv:
+        return main_overpass()
+    rows = ukho_wrecks()
+    if len(rows) < 1000:
+        raise SystemExit(f'too few wrecks ({len(rows)}), keeping the previous pack')
+    assemble_rows(rows, 'UK Hydrographic Office worldwide wreck locations via EMODnet Human Activities (emodnet:wwshipwrecks)',
+                  'Contains public sector information licensed under the Open Government Licence v3.0 · © UK Hydrographic Office')
+
+
+def main_overpass():
     os.makedirs(RAW, exist_ok=True)
     ids, t0 = tiles(), time.time()
     if '--refresh' in sys.argv:  # monthly: start over

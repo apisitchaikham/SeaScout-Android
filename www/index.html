@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.42-chl-coverage-2026-11-14">
+<meta name="sea-scout-build" content="standalone-r14.15.43-ukho-wrecks-2026-11-14">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.42 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.43 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -734,7 +734,7 @@ async function seaResilientMarine(b,m){
 </head>
 <body>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.42 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.43 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1023,8 +1023,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.42-chl-coverage-2026-11-14
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.42-chl-coverage-2026-11-14';
+// SEA_SCOUT_BUILD=standalone-r14.15.43-ukho-wrecks-2026-11-14
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.43-ukho-wrecks-2026-11-14';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -2685,11 +2685,17 @@ async function loadOsmHazards(b,force){
  try{
   let rows,via,partial=false;
   let stHz=null;try{stHz=typeof SeaWorldHazards!=='undefined'?await SeaWorldHazards.rows(b):null;}catch(_){stHz=null;}
-  if(stHz){rows=stHz.rows;via=`ไฟล์อันตรายทั่วโลก (OpenStreetMap ณ ${stHz.built})`;}
+  let liveErr=null;rows=[];via='';try{
+  if(false){}
   else if(await (async()=>{try{const sm=await SeaSeamap.hazards(b);rows=sm.rows;via='Open Waters Seamap · OpenStreetMap (อัปเดตรายสัปดาห์)';partial=sm.partial;return true;}catch(_){return false;}})()){}
   else if(be){const d=await tideFetchJSON(`${be}/v1/hazards?s=${b.s.toFixed(4)}&w=${b.w.toFixed(4)}&n=${b.n.toFixed(4)}&e=${b.e.toFixed(4)}`,45000);if(!Array.isArray(d.features))throw new Error('Backend ส่งรูปแบบไม่ถูกต้อง');rows=d.features;via='Sea Scout Backend (shared cache)';partial=d.status!=='ready';}
   else{{const q='?data='+encodeURIComponent(osmOverpassQuery(b));let last=null;for(const ep of OSM_OVERPASS_MIRRORS){try{rows=osmNormalise(await tideFetchJSON(ep+q,30000));via='Overpass API โดยตรง · '+new URL(ep).hostname;last=null;break;}catch(e){last=e;}}if(last)throw last;}}
+  }catch(e){liveErr=e;rows=[];via='';}
   try{const aw=await SeaAwois.hazards(b);if(aw.length){rows=rows.concat(aw);via+=' + NOAA AWOIS';}}catch(_){}
+  if(stHz&&stHz.rows.length){const have=rows.filter(h=>h.kind==='wreck'),cs=Math.cos((b.s+b.n)/2*Math.PI/180);
+   const add=stHz.rows.filter(u=>!have.some(h=>Math.abs(h.lat-u.lat)<.001&&Math.abs((h.lon-u.lon)*cs)<.001)).map(u=>({...u,src:'UKHO'}));
+   if(add.length){rows=rows.concat(add);via=(via?via+' + ':'')+'ซากเรือทั่วโลก © UKHO · Open Government Licence v3.0 ('+stHz.built+')';}}
+  if(!rows.length&&liveErr)throw liveErr;if(liveErr)partial=true;
   if(seq!==OSM_HAZ_SEQ)return;
   OSM_HAZ=rows.filter(h=>h&&OSM_HAZ_LABEL[h.kind]&&Number.isFinite(h.lat)&&Number.isFinite(h.lon));
   OSM_HAZ_STATE={state:partial?'partial':'ok',message:'',via,at:Date.now(),bounds:b};OSM_HAZ_CACHE.set(key,{ts:Date.now(),rows:OSM_HAZ,state:OSM_HAZ_STATE});if(OSM_HAZ_CACHE.size>12)OSM_HAZ_CACHE.delete(OSM_HAZ_CACHE.keys().next().value);
@@ -5171,6 +5177,7 @@ const SEA_HAZ_KINDS=['rock','reef','wreck','obstruction','shoal'];
 const SeaWorldHazards=(()=>{
  const KEY='seaScoutHazardsUrl',blocks=new Map();let index=null,indexP=null,failed=null;
  function base(){let v='';try{v=String(localStorage.getItem(KEY)||'').trim();}catch(_){}if(v)return v.replace(/\/*$/,'/');
+  if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&/^https?:$/.test(location.protocol))return 'https://seascout.apisit-chaikham.workers.dev/hazards/'; // r14.15.42: the Android app reads the pack from the website
   const t=(typeof SeaWorldTide!=='undefined')?SeaWorldTide.base():'';if(t)return t.replace(/eot20\/?$/,'hazards/');
   return /^https?:$/.test(location.protocol)?new URL('hazards/',location.href).href:'';}
  async function gunzip(buf){const u=new Uint8Array(buf,0,2);if(!(u[0]===0x1f&&u[1]===0x8b))return buf;return await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();}
