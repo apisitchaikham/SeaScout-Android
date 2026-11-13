@@ -1,0 +1,41 @@
+name: Build world hazard pack (OpenStreetMap)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hazards
+  cancel-in-progress: false
+
+jobs:
+  hazards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip when the pack is complete and fresh
+        id: chk
+        run: |
+          if [ -f data/hazards.zip ] && [ "$(find data/hazards.zip -mtime -25 | wc -l)" = "1" ] && [ "${{ github.event_name }}" = "schedule" ]; then echo "skip=1" >> $GITHUB_OUTPUT; fi
+      - name: Fetch tiles from Overpass (resumable)
+        if: steps.chk.outputs.skip != '1'
+        env:
+          HAZ_BUDGET_S: '17000'
+        run: python3 tools/build_hazards.py
+      - name: Commit progress
+        if: steps.chk.outputs.skip != '1'
+        run: |
+          git config user.name "seascout-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/hazards_raw 2>/dev/null || true
+          if [ -f data/hazards.zip ]; then git add data/hazards.zip; fi
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          if git diff --cached --name-only | grep -q '^data/hazards.zip$'; then MSG="World hazard pack updated"; else MSG="Hazard pack progress [skip ci]"; fi
+          git commit -m "$MSG"
+          git pull --rebase origin main
+          git push
