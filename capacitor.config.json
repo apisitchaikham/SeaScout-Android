@@ -1,0 +1,16 @@
+{
+  "appId": "app.seascout.marine",
+  "appName": "Sea Scout",
+  "webDir": "www",
+  "android": {
+    "useLegacyBridge": true,
+    "allowMixedContent": false,
+    "backgroundColor": "#06263a"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_sea",
+      "iconColor": "#0b84a5"
+    }
+  }
+}

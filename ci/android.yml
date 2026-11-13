@@ -1,0 +1,89 @@
+name: Build Android (Sea Scout)
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'SeaScout_Android_r17_Source_Project.zip'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SEA_VERSION_CODE: ${{ github.run_number }}
+      SEA_VERSION_NAME: 1.0.${{ github.run_number }}
+      HAS_KEYSTORE: ${{ secrets.SEA_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install
+        run: npm ci
+
+      - name: Unpack world tide tiles into the web app
+        run: unzip -q -o data/eot20.zip -d www/ && ls www/eot20 | head
+
+      - name: Copy web app into Android
+        run: npx cap sync android
+
+      - name: Build debug APK (for testing on your phone)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SeaScout-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Publish debug APK to GitHub Releases (easy download on phone)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: seascout-r14.15.24-build-${{ github.run_number }}
+          name: Sea Scout r14.15.24 · build ${{ github.run_number }}
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
+          generate_release_notes: false
+
+      # Release build for Google Play runs only after you add the keystore secrets.
+      - name: Decode keystore
+        if: env.HAS_KEYSTORE == 'true'
+        run: echo "${{ secrets.SEA_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/seascout.jks"
+
+      - name: Build release AAB + APK (signed)
+        if: env.HAS_KEYSTORE == 'true'
+        working-directory: android
+        env:
+          SEA_KEYSTORE_PATH: ${{ runner.temp }}/seascout.jks
+          SEA_KEYSTORE_PASSWORD: ${{ secrets.SEA_KEYSTORE_PASSWORD }}
+          SEA_KEY_ALIAS: ${{ secrets.SEA_KEY_ALIAS }}
+          SEA_KEY_PASSWORD: ${{ secrets.SEA_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_KEYSTORE == 'true'
+        with:
+          name: SeaScout-release
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
