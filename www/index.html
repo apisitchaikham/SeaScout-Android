@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.31-cache-live-2026-11-13">
+<meta name="sea-scout-build" content="standalone-r14.15.32-lon360-2026-11-13">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.31 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.32 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -734,7 +734,7 @@ async function seaResilientMarine(b,m){
 </head>
 <body>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.31 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.32 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1023,8 +1023,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.31-cache-live-2026-11-13
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.31-cache-live-2026-11-13';
+// SEA_SCOUT_BUILD=standalone-r14.15.32-lon360-2026-11-13
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.32-lon360-2026-11-13';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -1733,10 +1733,27 @@ function erdAxisConstraint(name,axis,b,st,timeSel){
 }
 async function erdGrid(h,id,b,st,timeSel,vnHint){
  const m=await erdMeta(h,id,vnHint),vn=m.variable;
- const q=m.dims.map(d=>erdAxisConstraint(d,m.axes[d],b,st,timeSel)).join('');
- const url=`${h}/griddap/${id}.json?${encodeURIComponent(vn)}${q}`;
- const d=await jsonp(url,ERDDAP_DATA_TIMEOUT_MS),tb=d&&d.table;
- if(!tb||!Array.isArray(tb.rows)||!Array.isArray(tb.columnNames))throw new Error('ERDDAP ไม่ส่งตารางข้อมูลที่ถูกต้อง');
+ // r14.15.32: grids stored as 0..360 longitude (GFS, WW3): split a box that crosses 0 deg, and map the answer back
+ // to the -180..180 frame of the request, so places west of Greenwich (Americas, West Africa, Europe) match.
+ const lonDim=m.dims.find(d=>/^longitude$/i.test(d)),ax=lonDim&&m.axes[lonDim],rg=ax&&ax.actualRange,is360=!!(rg&&rg[0]>=0&&rg[1]>180);
+ const one=async bb=>{
+  const q=m.dims.map(d=>erdAxisConstraint(d,m.axes[d],bb,st,timeSel)).join('');
+  const url=`${h}/griddap/${id}.json?${encodeURIComponent(vn)}${q}`;
+  const d=await jsonp(url,ERDDAP_DATA_TIMEOUT_MS),tb=d&&d.table;
+  if(!tb||!Array.isArray(tb.rows)||!Array.isArray(tb.columnNames))throw new Error('ERDDAP ไม่ส่งตารางข้อมูลที่ถูกต้อง');
+  return tb;
+ };
+ let tb;
+ if(is360&&b.w<0&&b.e>=0){
+  const eWest=Math.min(-1e-4,rg[1]-360);   // last grid column west of 0 deg (e.g. 359.5 -> -0.5)
+  const jobs=[one({...b,w:0})];if(b.w<=eWest)jobs.unshift(one({...b,e:eWest}));
+  const parts=await Promise.allSettled(jobs);
+  const ok=parts.filter(p=>p.status==='fulfilled').map(p=>p.value);
+  if(!ok.length)throw parts[0].reason;
+  tb={...ok[0],rows:ok.flatMap(t=>t.rows)};
+ }else tb=await one(b);
+ const oi=tb.columnNames.findIndex(x=>/^lon/i.test(x)),ctr=(b.w+b.e)/2;
+ if(oi>=0&&Number.isFinite(ctr))for(const r of tb.rows){const lo=Number(r[oi]);if(Number.isFinite(lo))r[oi]=lo+360*Math.round((ctr-lo)/360);}
  return{table:tb,vn,meta:m};
 }
 function parseTable(tb,vn){
