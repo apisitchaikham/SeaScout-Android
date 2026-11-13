@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.30-fast-map-tour-2026-11-13">
+<meta name="sea-scout-build" content="standalone-r14.15.31-cache-live-2026-11-13">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.30 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.31 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -734,7 +734,7 @@ async function seaResilientMarine(b,m){
 </head>
 <body>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.30 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.31 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1023,8 +1023,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.30-fast-map-tour-2026-11-13
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.30-fast-map-tour-2026-11-13';
+// SEA_SCOUT_BUILD=standalone-r14.15.31-cache-live-2026-11-13
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.31-cache-live-2026-11-13';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -5176,18 +5176,16 @@ try{if(new URLSearchParams(location.search).get('tool')==='hazards')window.addEv
 
 </script>
 <script>
-// r14.15.29: shared cache (Cloudflare Pages _worker.js at <site>/api/). ERDDAP JSON goes through it first,
+// r14.15.29: shared cache (standalone Cloudflare Worker, <worker>/api/). ERDDAP JSON goes through it first,
 // so many users asking for the same area/hour cost NOAA one request. If the cache is unreachable or over its
 // free quota, the app goes straight to NOAA as before (nothing breaks).
-const SEA_PROXY_DEFAULT='';   // filled in for the Android app once the site URL is known, e.g. 'https://seascout.pages.dev/api/'
+const SEA_PROXY_DEFAULT='https://seascout-cache.apisit-chaikham.workers.dev/api/';   // filled in for the Android app once the site URL is known, e.g. 'https://seascout-cache.<account>.workers.dev/api/'
 const SeaProxy=(()=>{
  const KEY='seaScoutProxyBase';let downUntil=0;
  function base(){
   let v='';try{v=new URLSearchParams(location.search).get('proxy')||localStorage.getItem(KEY)||'';}catch(_){}
   if(v==='off')return '';
   if(v)return v.replace(/\/*$/,'/');
-  const h=location.hostname;
-  if(/^https?:$/.test(location.protocol)&&h&&!/^(localhost|127\.|10\.|192\.168\.|\[::1\])/.test(h))return location.origin+'/api/';
   return SEA_PROXY_DEFAULT;
  }
  function set(v){try{v=String(v||'').trim();if(v)localStorage.setItem(KEY,v);else localStorage.removeItem(KEY);}catch(_){}downUntil=0;}
