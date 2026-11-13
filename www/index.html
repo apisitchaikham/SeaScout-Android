@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.33-forecast-2026-11-13">
+<meta name="sea-scout-build" content="standalone-r14.15.34-fewer-requests-2026-11-13">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.33 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.34 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -734,7 +734,7 @@ async function seaResilientMarine(b,m){
 </head>
 <body>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.33 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.34 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1023,8 +1023,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.33-forecast-2026-11-13
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.33-forecast-2026-11-13';
+// SEA_SCOUT_BUILD=standalone-r14.15.34-fewer-requests-2026-11-13
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.34-fewer-requests-2026-11-13';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -1680,7 +1680,8 @@ async function erdMetaRaw(h,id){
  let pending=ERD_META_CACHE.get(key);
  if(!pending){
   pending=(async()=>{
-   const inf=await jsonp(`${h}/info/${id}/index.json`,ERDDAP_META_TIMEOUT_MS);
+   const LK='seaErdInfo|'+key;let inf=null;try{const c=JSON.parse(localStorage.getItem(LK)||'null');if(c&&Date.now()-c.at<90*60e3)inf=c.inf;}catch(_){}
+   if(!inf){inf=await jsonp(`${h}/info/${id}/index.json`,ERDDAP_META_TIMEOUT_MS);try{const j=JSON.stringify({at:Date.now(),inf});if(j.length<600000)localStorage.setItem(LK,j);}catch(_){}}
    const rows=inf&&inf.table&&inf.table.rows;
    if(!Array.isArray(rows))throw new Error('อ่าน ERDDAP metadata ไม่ได้');
    const variableRows=rows.filter(r=>r[0]==='variable'),axes={};
@@ -1731,21 +1732,24 @@ function erdAxisConstraint(name,axis,b,st,timeSel){
  if(axis&&axis.nValues===1)return encodeURIComponent('[0]');
  throw new Error('ไม่รองรับแกน '+name+' ใน '+axis?.raw);
 }
-async function erdGrid(h,id,b,st,timeSel,vnHint){
- const m=await erdMeta(h,id,vnHint),vn=m.variable;
- // r14.15.32: grids stored as 0..360 longitude (GFS, WW3): split a box that crosses 0 deg, and map the answer back
- // to the -180..180 frame of the request, so places west of Greenwich (Americas, West Africa, Europe) match.
+// r14.15.34: fewer requests per user — every request through the shared cache counts toward the daily quota.
+// (1) Variables of one dataset asked in the same moment (same box, time, stride) go out as ONE ERDDAP request
+//     (griddap accepts several variables in one query). If that combined request fails, each variable is retried alone.
+// (2) ERDDAP metadata (/info/...) is kept on the device for 90 minutes.
+const ERD_BATCH=new Map();
+async function erdGridOne(h,id,b,st,timeSel,metas){
+ const m=metas[0];
  const lonDim=m.dims.find(d=>/^longitude$/i.test(d)),ax=lonDim&&m.axes[lonDim],rg=ax&&ax.actualRange,is360=!!(rg&&rg[0]>=0&&rg[1]>180);
  const one=async bb=>{
   const q=m.dims.map(d=>erdAxisConstraint(d,m.axes[d],bb,st,timeSel)).join('');
-  const url=`${h}/griddap/${id}.json?${encodeURIComponent(vn)}${q}`;
+  const url=`${h}/griddap/${id}.json?${metas.map(x=>encodeURIComponent(x.variable)+q).join(',')}`;
   const d=await jsonp(url,ERDDAP_DATA_TIMEOUT_MS),tb=d&&d.table;
   if(!tb||!Array.isArray(tb.rows)||!Array.isArray(tb.columnNames))throw new Error('ERDDAP ไม่ส่งตารางข้อมูลที่ถูกต้อง');
   return tb;
  };
  let tb;
  if(is360&&b.w<0&&b.e>=0){
-  const eWest=Math.min(-1e-4,rg[1]-360);   // last grid column west of 0 deg (e.g. 359.5 -> -0.5)
+  const eWest=Math.min(-1e-4,rg[1]-360);
   const jobs=[one({...b,w:0})];if(b.w<=eWest)jobs.unshift(one({...b,e:eWest}));
   const parts=await Promise.allSettled(jobs);
   const ok=parts.filter(p=>p.status==='fulfilled').map(p=>p.value);
@@ -1754,8 +1758,31 @@ async function erdGrid(h,id,b,st,timeSel,vnHint){
  }else tb=await one(b);
  const oi=tb.columnNames.findIndex(x=>/^lon/i.test(x)),ctr=(b.w+b.e)/2;
  if(oi>=0&&Number.isFinite(ctr))for(const r of tb.rows){const lo=Number(r[oi]);if(Number.isFinite(lo))r[oi]=lo+360*Math.round((ctr-lo)/360);}
- return{table:tb,vn,meta:m};
+ return tb;
 }
+async function erdGridGroup(h,id,b,st,timeSel,hints){
+ const out=new Map();
+ const metas=await Promise.all(hints.map(v=>erdMeta(h,id,v).then(m=>({hint:v,m}),e=>({hint:v,err:e}))));
+ const groups=new Map();
+ for(const x of metas){if(x.err){out.set(x.hint,Promise.reject(x.err));continue;}const k=x.m.dims.join(',');if(!groups.has(k))groups.set(k,[]);const g=groups.get(k);if(!g.some(y=>y.m.variable===x.m.variable))g.push(x);else{const same=g.find(y=>y.m.variable===x.m.variable);x.alias=same;}}
+ for(const g of groups.values()){
+  let tb=null;
+  if(g.length>1){try{tb=await erdGridOne(h,id,b,st,timeSel,g.map(x=>x.m));}catch(e){tb=null;}}
+  if(tb)for(const x of g)out.set(x.hint,Promise.resolve({table:tb,vn:x.m.variable,meta:x.m}));
+  else await Promise.all(g.map(async x=>{try{const t=await erdGridOne(h,id,b,st,timeSel,[x.m]);out.set(x.hint,Promise.resolve({table:t,vn:x.m.variable,meta:x.m}));}catch(e){out.set(x.hint,Promise.reject(e));}}));
+ }
+ for(const x of metas)if(x.alias&&!out.has(x.hint))out.set(x.hint,out.get(x.alias.hint));
+ for(const p of out.values())p.catch(()=>{});
+ return out;
+}
+function erdGrid(h,id,b,st,timeSel,vnHint){
+ const key=[h,id,b.s,b.n,b.w,b.e,st,timeSel].join('|');
+ let g=ERD_BATCH.get(key);
+ if(!g){g={hints:[]};ERD_BATCH.set(key,g);g.p=new Promise(r=>setTimeout(r,0)).then(()=>{ERD_BATCH.delete(key);return erdGridGroup(h,id,b,st,timeSel,g.hints);});}
+ if(!g.hints.includes(vnHint))g.hints.push(vnHint);
+ return g.p.then(out=>out.get(vnHint));
+}
+
 function parseTable(tb,vn){
  const cn=tb.columnNames,li=cn.findIndex(x=>/^lat/i.test(x)),oi=cn.findIndex(x=>/^lon/i.test(x)),vi=cn.indexOf(vn),ti=cn.findIndex(x=>/^time$/i.test(x));
  if(li<0||oi<0||vi<0)return null;
