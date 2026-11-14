@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sea Scout · จัดการวิดีโอ/รูปในแท็บวิเคราะห์</title>
+<style>
+body{font-family:system-ui,Sarabun,sans-serif;background:#071b2b;color:#e6f2f8;margin:0;padding:16px;max-width:980px}
+h1{font-size:22px;margin:0 0 4px}p,li{color:#9fc3d6;font-size:14px}
+table{width:100%;border-collapse:collapse;margin:12px 0}td,th{border-bottom:1px solid #1d3d52;padding:6px;vertical-align:top;font-size:13px;text-align:left}
+input,select{width:100%;box-sizing:border-box;background:#0a2133;color:#e6f2f8;border:1px solid #2a5370;border-radius:8px;padding:7px}
+button{background:#11314a;color:#e6f2f8;border:1px solid #2a5370;border-radius:10px;padding:8px 12px;cursor:pointer;margin:2px}
+button.p{background:linear-gradient(180deg,#22b4ea,#0b78b8);border-color:#47d0ff}
+.prev{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.tile{aspect-ratio:16/10;border-radius:12px;border:1px solid #2a5370;background:#0a2133 center/cover no-repeat;display:flex;align-items:flex-end;color:#fff;text-decoration:none;font-size:12px}
+.tile span{width:100%;padding:5px 7px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+textarea{width:100%;height:160px;background:#04101a;color:#cfe3ee;border:1px solid #2a5370;border-radius:8px;font:12px ui-monospace,monospace}
+small{color:#8eaabb}
+</style></head><body>
+<h1>🎬 จัดการวิดีโอ/รูปในแท็บ “วิเคราะห์”</h1>
+<p>ใส่ลิงก์ YouTube (รูปตัวอย่างดึงให้อัตโนมัติ) ลิงก์รูป หรือเว็บไซต์ใดก็ได้ แอปจะเลือกมาแสดง 4 ช่อง โดยให้ความสำคัญกับสื่อที่ตรงกับชนิดปลา/หมึกของจุดที่ผู้ใช้เลือกก่อน</p>
+<ol><li>แก้ไขรายการด้านล่าง</li><li>กด <b>คัดลอก JSON</b></li><li>กด <b>เปิดไฟล์บน GitHub</b> → ลบของเดิม → วาง → Commit changes</li><li>ประมาณ 1–2 นาทีเว็บจะอัปเดต แอปในมือถือดึงไฟล์ใหม่เองทุก 30 นาที</li></ol>
+<table><thead><tr><th>ชื่อที่แสดง</th><th>ลิงก์ (วิดีโอ/รูป/เว็บ)</th><th>รูปปก (ไม่ใส่ก็ได้)</th><th>แสดงกับ</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+<button onclick="add()">➕ เพิ่มรายการ</button>
+<button class="p" onclick="copyJson()">📋 คัดลอก JSON</button>
+<button onclick="dl()">⬇️ ดาวน์โหลด analysis.json</button>
+<button onclick="window.open('https://github.com/apisitchaikham/SeaScout-Android/edit/main/www/media/analysis.json','_blank')">✏️ เปิดไฟล์บน GitHub</button>
+<h3>ตัวอย่าง 4 ช่องแรก</h3><div class="prev" id="prev"></div>
+<h3>JSON</h3><textarea id="out" readonly></textarea>
+<p><small>“แสดงกับ” ใส่ได้หลายค่า คั่นด้วยจุลภาค: all = ทุกจุด · squid = หมึก · fish = ปลา · pel ปลาผิวน้ำ · reef ปลาโขด/ซากเรือ · dem ปลาหน้าดิน · coast ชายฝั่ง · ray กระเบน · หรือรหัสชนิด เช่น u (หมึกกล้วย), s (หมึกกระดอง), g (ปลากะรัง)</small></p>
+<script>
+let D={note:'',items:[]};
+const yt=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);return m?m[1]:null;};
+const th=it=>it.thumb||(yt(it.url)?`https://img.youtube.com/vi/${yt(it.url)}/hqdefault.jpg`:(/\.(jpe?g|png|webp|gif)(\?|$)/i.test(it.url||'')?it.url:''));
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function draw(){
+ document.getElementById('rows').innerHTML=D.items.map((it,i)=>`<tr><td><input value="${esc(it.title)}" oninput="D.items[${i}].title=this.value;sync()"></td><td><input value="${esc(it.url)}" oninput="D.items[${i}].url=this.value;D.items[${i}].type=yt(this.value)?'video':(D.items[${i}].type||'link');sync()"></td><td><input value="${esc(it.thumb||'')}" oninput="D.items[${i}].thumb=this.value;sync()"></td><td><input value="${esc((it.for||['all']).join(','))}" oninput="D.items[${i}].for=this.value.split(',').map(s=>s.trim()).filter(Boolean);sync()"></td><td><button onclick="mv(${i},-1)">↑</button><button onclick="mv(${i},1)">↓</button><button onclick="D.items.splice(${i},1);draw()">🗑</button></td></tr>`).join('');
+ sync();
+}
+function sync(){
+ document.getElementById('out').value=JSON.stringify(D,null,2);
+ document.getElementById('prev').innerHTML=D.items.slice(0,4).map(it=>`<a class="tile" target="_blank" href="${esc(it.url)}" style="background-image:url('${esc(th(it))}')"><span>${yt(it.url)?'▶️ ':''}${esc(it.title||it.url)}</span></a>`).join('');
+}
+function add(){D.items.push({title:'',url:'',thumb:'',type:'link',for:['all']});draw();}
+function mv(i,d){const j=i+d;if(j<0||j>=D.items.length)return;[D.items[i],D.items[j]]=[D.items[j],D.items[i]];draw();}
+function copyJson(){navigator.clipboard.writeText(document.getElementById('out').value).then(()=>alert('คัดลอกแล้ว'),()=>{document.getElementById('out').select();document.execCommand('copy');});}
+function dl(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([document.getElementById('out').value],{type:'application/json'}));a.download='analysis.json';a.click();}
+fetch('analysis.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{D=j;if(!Array.isArray(D.items))D.items=[];draw();}).catch(()=>draw());
+</script></body></html>
