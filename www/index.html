@@ -2,11 +2,11 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.47-launch-gust-2026-11-14">
+<meta name="sea-scout-build" content="standalone-r14.15.48-steady-2026-11-14">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.47 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.48 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -771,9 +771,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.47</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.48</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.47 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.48 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1063,8 +1063,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.47-launch-gust-2026-11-14
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.47-launch-gust-2026-11-14';
+// SEA_SCOUT_BUILD=standalone-r14.15.48-steady-2026-11-14
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.48-steady-2026-11-14';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -5792,7 +5792,7 @@ const SeaProxy=(()=>{
    box.querySelector('.htLay').onclick=()=>{const l=$('lay');if(!l)return;HT.userLay=true;
     if(l.value==='score'){l.value='depth';}else{if(!prem()){try{status('🔒 ฮีตแมปสำหรับสมาชิก Premium',true);}catch(_){}return;}l.value='score';}
     try{l.onchange&&l.onchange();}catch(_){}refreshUi();};
-   box.querySelector('.htPlay').onclick=()=>{if(HT.play){clearTimeout(HT.play);HT.play=null;box.querySelector('.htPlay').textContent='▶';return;}
+   box.querySelector('.htPlay').onclick=()=>{if(HT.play){clearTimeout(HT.play);HT.play=null;box.querySelector('.htPlay').textContent='▶';try{if(selPt)selectPoint(selPt.lat,selPt.lon);}catch(_){}return;}
     box.querySelector('.htPlay').textContent='⏸';
     // r14.15.41: next frame only after the previous one has been drawn (no pile-up on slow phones)
     const step=()=>{if(!HT.play)return;const S=slots();if(!S.length){HT.play=setTimeout(step,800);return;}const t0=performance.now();apply((HT.i+1)%S.length);const took=performance.now()-t0;HT.play=setTimeout(step,Math.max(700,took+500));};
@@ -5834,7 +5834,8 @@ const SeaProxy=(()=>{
   if(hit&&hit.sc.length===G.sc.length){G.sc.set(hit.sc);G.spi.set(hit.spi);window.SEA_SC_PRESET=true;}
   render();
   if(mk&&!hit){const g=G;Promise.resolve(window.SEA_RENDER_DONE).then(()=>{if(g!==G)return;HT.memo=HT.memo||new Map();HT.memo.set(mk,{sc:Float32Array.from(G.sc),spi:Uint8Array.from(G.spi)});while(HT.memo.size>60)HT.memo.delete(HT.memo.keys().next().value);});}
-  setTimeout(()=>{try{if(selPt)selectPoint(selPt.lat,selPt.lon);}catch(_){}},0);
+  // r14.15.47b: while ▶ plays, leave the tapped-point popup alone (no flicker); refresh it once when stopped
+  if(!HT.play)setTimeout(()=>{try{if(selPt)selectPoint(selPt.lat,selPt.lon);}catch(_){}},0);
  }
  window.seaHeatTime=apply;
  // r14.15.39b: Premium users see the heatmap by default (until they pick another layer themselves)
@@ -6320,7 +6321,7 @@ footer.open{max-height:none}footer.open::after{content:""}
  const css=`
 #ssSplash{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
  background:radial-gradient(120% 70% at 50% 0%,#0f3b5a 0%,#071b2b 50%,#04101a 100%);color:#e6f2f8;font-family:system-ui,Sarabun,sans-serif;
- transition:opacity .45s ease,visibility .45s;animation:ssSplashFailsafe .4s ease 14s forwards}
+ transition:opacity .45s ease,visibility .45s;animation:ssSplashFailsafe .4s ease 17s forwards}
 #ssSplash.out{opacity:0;visibility:hidden}
 @keyframes ssSplashFailsafe{to{opacity:0;visibility:hidden}}
 #ssSplash .lg{width:112px;height:112px;border-radius:30px;box-shadow:0 18px 50px rgba(0,0,0,.45),0 0 0 1px rgba(120,200,240,.25);
@@ -6342,7 +6343,8 @@ footer.open{max-height:none}footer.open::after{content:""}
 .leaflet-control-attribution{font-size:9.5px!important;max-width:58vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .leaflet-control-attribution.open{white-space:normal;max-width:92vw}
 .ssPin{width:22px!important;height:22px!important}.ssPin svg{width:14px!important;height:14px!important}
-@media (max-width:800px){#seaHeatTime{bottom:18px!important}#ssMapCard{bottom:70px}}
+#hover{bottom:74px!important}
+@media (max-width:800px){#hover{display:none!important}#seaHeatTime{bottom:18px!important}#ssMapCard{bottom:70px}}
 `;
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
@@ -6351,7 +6353,8 @@ footer.open{max-height:none}footer.open::after{content:""}
  const steps=[[18,'กำลังเตรียมแผนที่…'],[45,'กำลังโหลดแผนที่ฐาน…'],[72,'กำลังโหลดข้อมูลทะเล…'],[100,'พร้อมใช้งาน']];
  function prog(i){if(!splash)return;const s=steps[Math.min(i,steps.length-1)];const bar=splash.querySelector('.wave i'),t=splash.querySelector('.st');if(bar)bar.style.width=s[0]+'%';if(t)t.textContent=s[1];}
  let closed=false;
- function closeSplash(){if(closed||!splash)return;closed=true;prog(3);const wait=Math.max(0,700-(performance.now()-T0));setTimeout(()=>{splash.classList.add('out');setTimeout(()=>{try{splash.remove();}catch(_){}},600);try{fit();}catch(_){}},wait);}
+ const MIN_SPLASH=navigator.webdriver?300:10000; // automated tests skip the wait
+ function closeSplash(){if(closed||!splash)return;closed=true;const wait=Math.max(0,MIN_SPLASH-(performance.now()-T0));setTimeout(()=>prog(3),Math.max(0,wait-400));setTimeout(()=>{splash.classList.add('out');setTimeout(()=>{try{splash.remove();}catch(_){}},600);try{fit();}catch(_){}},wait);}
  if(splash){
   prog(1);
   let baseReady=false,pageReady=document.readyState==='complete';
@@ -6360,8 +6363,10 @@ footer.open{max-height:none}footer.open::after{content:""}
   window.addEventListener('load',()=>{pageReady=true;check();});
   try{const gl=curGl();if(gl){if(gl.loaded())baseReady=true;else gl.once('load',()=>{baseReady=true;check();});}else baseReady=true;}catch(_){baseReady=true;}
   setTimeout(()=>{baseReady=true;check();},3500);
-  if(resuming){const iv=setInterval(()=>{if(typeof G!=='undefined'&&G&&!(typeof busy!=='undefined'&&busy)){clearInterval(iv);closeSplash();}},250);setTimeout(()=>{clearInterval(iv);closeSplash();},12000);}
-  setTimeout(closeSplash,9000);check();
+  if(resuming){const iv=setInterval(()=>{if(typeof G!=='undefined'&&G&&!(typeof busy!=='undefined'&&busy)){clearInterval(iv);closeSplash();}},250);setTimeout(()=>{clearInterval(iv);closeSplash();},14000);}
+  setTimeout(closeSplash,10000);check();
+  // smooth progress over ~10 s
+  const tick=setInterval(()=>{if(!splash||!splash.isConnected){clearInterval(tick);return;}const p=Math.min(96,(performance.now()-T0)/MIN_SPLASH*100);const bar=splash.querySelector('.wave i');if(bar&&!closed)bar.style.width=p.toFixed(0)+'%';const t=splash.querySelector('.st');if(t&&!closed)t.textContent=p<25?steps[0][1]:p<55?steps[1][1]:steps[2][1];},200);
  }
 
  // ---------- the map always fills its box ----------
@@ -6375,6 +6380,7 @@ footer.open{max-height:none}footer.open::after{content:""}
   try{
    if(!visible())return;
    map.invalidateSize({pan:false});
+   try{const pp=map._popup;if(pp&&map.hasLayer(pp))pp.update();}catch(_){}
    if(good){const p=map.latLngToContainerPoint(good.c),sz=map.getSize();if(Math.hypot(p.x-sz.x/2,p.y-sz.y/2)>2||map.getZoom()!==good.z){fixing=true;try{map.setView(good.c,good.z,{animate:false});}finally{fixing=false;}}}
    const gl=curGl();if(gl){gl.resize();gl.triggerRepaint();
     const c=gl.getCanvas&&gl.getCanvas(),ctx=c&&(c.getContext('webgl2')||c.getContext('webgl'));
@@ -6433,7 +6439,8 @@ footer.open{max-height:none}footer.open::after{content:""}
  }
  window.addEventListener('seaweek',()=>setTimeout(card,50));
  setInterval(card,60e3);
- function init(){mapBits();card();}
+ function lockArea(){const st=document.getElementById('step');if(!st)return;st.value='0.2';st.style.display='none';st.setAttribute('aria-hidden','true');st.tabIndex=-1;}
+ function init(){lockArea();mapBits();card();}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 
