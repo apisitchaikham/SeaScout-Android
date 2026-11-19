@@ -1,0 +1,97 @@
+# Sea Scout — สมัครเสร็จแล้วเชื่อมทีเดียว (r14.15.60)
+
+โค้ดฝั่ง server เขียนเสร็จและทดสอบกับระบบจำลองแล้ว (Google, Apple, Resend)
+แต่ละส่วนเปิดเองเมื่อใส่ค่าครบ ถ้ายังไม่ใส่ endpoint จะตอบ `503 …_not_configured`
+ดูสถานะได้ใน `SeaScout_Admin.html` → ภาพรวม → "สถานะระบบที่ต้องใช้บัญชีภายนอก"
+
+## ใส่ค่าที่ไหน
+Cloudflare Dashboard → Workers & Pages → **seascout** → Settings → **Variables and Secrets** → Add
+- ใส่ทุกค่าเป็นชนิด **Secret** (เข้ารหัส และไม่หายเวลา deploy ใหม่)
+- ห้ามใส่ค่าเหล่านี้ลงในไฟล์ใน repo
+- ใส่แล้วกด Deploy ได้ทันที ไม่ต้องแก้โค้ด
+
+---
+
+## 1. อีเมล: ยืนยันอีเมล / ลืมรหัสผ่าน
+| ต้องมี | ได้จาก |
+|---|---|
+| โดเมนสำหรับส่งอีเมล เช่น `seascout.app` | ซื้อโดเมน (Cloudflare Registrar ได้) |
+| บัญชี Resend + ยืนยันโดเมน (DNS) | resend.com → Domains |
+
+| Secret | ค่า |
+|---|---|
+| `RESEND_API_KEY` | `re_…` จาก Resend → API Keys |
+| `EMAIL_FROM` | `Sea Scout <no-reply@โดเมนของคุณ>` |
+
+## 2. เข้าสู่ระบบด้วย Google
+Google Cloud Console → APIs & Services → Credentials → สร้าง OAuth client
+- ชนิด **Android**: package `app.seascout.marine` + SHA-1 ของ keystore
+- ชนิด **iOS**: bundle `app.seascout.marine`
+- ชนิด **Web**: ใช้เป็น server client id
+
+| Secret | ค่า |
+|---|---|
+| `GOOGLE_CLIENT_IDS` | client id ที่รับได้ทั้งหมด คั่นด้วย `,` |
+
+## 3. Sign in with Apple
+Apple Developer → Identifiers → App ID `app.seascout.marine` → เปิด Sign in with Apple
+
+| Secret | ค่า |
+|---|---|
+| `APPLE_CLIENT_IDS` | `app.seascout.marine` (ถ้ามี Services ID เพิ่ม ให้คั่นด้วย `,`) |
+
+## 4. Google Play Billing
+1. Play Console:
+   - สร้างแอป `app.seascout.marine`
+   - Monetize → Subscriptions → สร้างสินค้า เช่น `seascout_premium_monthly`, `seascout_pro_yearly`
+2. Google Cloud: สร้าง Service Account → Keys → JSON
+3. Play Console → Users and permissions → เชิญอีเมล service account ให้สิทธิ์ดูข้อมูลการเงินและจัดการคำสั่งซื้อ
+4. (แนะนำ) Real-time developer notifications:
+   - สร้าง Pub/Sub topic + push subscription ไปที่ `https://seascout.apisit-chaikham.workers.dev/api/v1/billing/google/notify`
+   - เปิด Authentication: service account + audience
+
+| Secret | ค่า |
+|---|---|
+| `GOOGLE_PLAY_PACKAGE` | `app.seascout.marine` |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | เนื้อหาไฟล์ JSON ทั้งไฟล์ |
+| `GOOGLE_RTDN_AUDIENCE` | audience ที่ตั้งใน push subscription |
+| `GOOGLE_RTDN_SA_EMAIL` | อีเมล service account ของ push subscription |
+
+จากนั้นใน Admin → แพ็กเกจ & Store ให้ผูก product id กับแพ็กเกจ (premium / pro)
+
+## 5. App Store (StoreKit)
+1. App Store Connect:
+   - สร้างแอป → Subscriptions → สร้างสินค้า
+   - Users and Access → Integrations → In-App Purchase key (.p8)
+2. App Store Server Notifications V2: ตั้ง URL `https://seascout.apisit-chaikham.workers.dev/api/v1/billing/apple/notify`
+
+| Secret | ค่า |
+|---|---|
+| `APPLE_BUNDLE_ID` | `app.seascout.marine` |
+| `APPLE_ISSUER_ID` | Issuer ID |
+| `APPLE_KEY_ID` | Key ID ของ .p8 |
+| `APPLE_PRIVATE_KEY` | เนื้อหาไฟล์ .p8 ทั้งไฟล์ |
+| `APPLE_ENV` | `Sandbox` ระหว่างทดสอบ (ลบออกเมื่อขายจริง) |
+
+จากนั้นใน Admin → แพ็กเกจ & Store ให้ผูก product id
+
+## 6. เปิดใช้สิทธิ์จาก server
+เมื่อทดสอบซื้อจริงผ่าน (sandbox) แล้ว ไปที่ Admin → เปิด/ปิดฟังก์ชัน → `server_premium` = เปิด
+แอปจะใช้สิทธิ์จากบัญชีแทนการปลดล็อกในเครื่อง ส่วน `tester_unlock` จะเก็บไว้หรือปิดก็ได้
+
+---
+
+## ฝั่งแอปที่ยังต้องเพิ่มหลังได้ค่าข้างบน
+ต้องมีไฟล์ตั้งค่าจริงก่อนถึงจะติดตั้งและทดสอบได้
+- **ปุ่ม Google / Apple ในหน้าบัญชี:** native plugin ส่ง `id_token` ไป `/auth/google` หรือ `/auth/apple`
+- **ปุ่มซื้อ Premium/Pro:** plugin Billing / StoreKit ส่ง `purchase_token` หรือ `original_transaction_id` ไป `/billing/*/verify`
+  - ส่ง `google_obfuscated_account_id` / `apple_app_account_token` จาก `/billing/account-tokens` ไปกับคำสั่งซื้อทุกครั้ง
+- **หน้าลืมรหัสผ่าน / ยืนยันอีเมล:** หน้าจอกรอกรหัส 8 ตัวในแอป (API พร้อมแล้ว)
+- **นโยบายความเป็นส่วนตัว:** ลิงก์ในช่องยินยอมตอนสมัคร (ต้องมีก่อนส่ง Store)
+
+## ผู้ดูแลระบบ (SeaScout_Admin.html)
+1. สมัครบัญชี Sea Scout ด้วยอีเมลเจ้าของในแอป
+2. แถว `admin_users` ของอีเมลนั้นใส่ไว้แล้วเป็น owner
+3. เปิดไฟล์ `admin/SeaScout_Admin.html` ในเบราว์เซอร์บนคอม → ใส่อีเมล + รหัสผ่าน
+- ไฟล์นี้ไม่มีความลับใดๆ token อยู่ในแท็บนั้นเท่านั้นและหมดอายุใน 2 ชม.
+- เพิ่มผู้ช่วยได้ในแท็บ "ผู้ดูแล": viewer / support / admin / owner

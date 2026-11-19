@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.59-account-2026-11-20">
+<meta name="sea-scout-build" content="standalone-r14.15.60-commerce-2026-11-20">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.59 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.60 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.59</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.60</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.59 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.60 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.59-account-2026-11-20
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.59-account-2026-11-20';
+// SEA_SCOUT_BUILD=standalone-r14.15.60-commerce-2026-11-20
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.60-commerce-2026-11-20';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -6969,6 +6969,23 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  }
  window.seaCarGo=(id,d)=>{const c=document.getElementById(id);if(!c)return;const t=c.querySelector('.anTrack');t.scrollBy({left:d*t.clientWidth,behavior:'smooth'});};
  document.addEventListener('scroll',e=>{const t=e.target;if(!t||!t.classList||!t.classList.contains('anTrack'))return;const i=Math.round(t.scrollLeft/Math.max(1,t.clientWidth));t.parentNode.querySelectorAll('.dots i').forEach((d,k)=>d.classList.toggle('on',k===i));},true);
+ // r14.15.60: products from the commerce API (images bound to the product, link bound to the offer); cached 30 min
+ const SHOP=new Map();window.seaCommerceFor=(t,p)=>commerceFor(t,p);
+ async function commerceFor(tops,p){
+  const out={};try{
+   const base=typeof seaApiBase==='function'?seaApiBase():'https://seascout.apisit-chaikham.workers.dev/api/v1/';
+   const flags=(window.SeaAccount&&SeaAccount.flags)||{};if(flags.commerce_api&&flags.commerce_api.enabled===false)return out;
+   const lang=(window.SeaI18n&&SeaI18n.lang)||'th',plat=window.SEA_PLATFORM||'web';
+   await Promise.all(tops.slice(0,6).map(async x=>{
+    const sp=x.sp,q=new URLSearchParams({species:sp.id,gear:gearOf(sp),cat:sp.cat||'',group:sp.g==='หมึก'?'squid':'fish',lang,limit:'6'});
+    const key=q.toString(),c=SHOP.get(key);let j=c&&Date.now()-c.at<30*60e3?c.j:null;
+    if(!j){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),5000);try{const r=await fetch(base+'commerce/items?'+key,{signal:ctl.signal});if(r.ok){j=await r.json();SHOP.set(key,{at:Date.now(),j});}}catch(_){}clearTimeout(t);}
+    out[sp.id]=(j&&j.items||[]).map(it=>{const o=it.offers[0];return{title:it.title,desc:it.desc,imgs:it.images.map(i=>i.url),thumb:it.images[0]&&it.images[0].url,
+     price:o&&o.price!=null?(Math.round(o.price*100)/100).toLocaleString()+' '+(o.currency||''):'',url:o?o.go+'?src='+encodeURIComponent(sp.id)+'&p='+plat:'',type:'product',for:[sp.id]};}).filter(it=>it.url);
+   }));
+  }catch(_){}
+  return out;
+ }
  async function render(){
   const sec=ensure();if(!sec)return;const body=sec.querySelector('.anBody');
   let p=null;try{p=(typeof selPt!=='undefined'&&selPt)?{lat:selPt.lat,lon:selPt.lon}:LAST;}catch(_){p=LAST;}
@@ -6976,6 +6993,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   const v=sampleAt(p.lat,p.lon);if(!v||v.land){body.innerHTML='<div class="anEmpty">จุดนี้อยู่นอกพื้นที่สแกนหรือเป็นแผ่นดิน</div>';return;}
   const all=SP.map(sp=>({sp,...score(sp,v)})).sort((a,b)=>b.v-a.v),tops=(typeof seaPopupList==='function'?seaPopupList(all):all).filter(x=>x.v>0).slice(0,6);
   const F=factors(p.lat,p.lon,v,tops),K=ctx(p.lat,p.lon,v),items=await loadMedia();
+  const shop=prem()?await commerceFor(tops,p):{};
   const coral=onCoral(p.lat,p.lon,v);
   let sp='';
   if(!prem()){sp=`<h3>🎣 ชนิดสัตว์ · เหยื่อ · สาย · เบ็ด/โย</h3>${typeof ssLockHtml==='function'?ssLockHtml('ชนิดสัตว์ที่อาจเจอเยอะ พร้อมเหยื่อ สาย และเบ็ด/โยที่เหมาะ เป็นส่วนหนึ่งของ Premium'):'<div class="anEmpty">🔒 Premium</div>'}<h3>🎬 สินค้าและวิดีโอแนะนำ</h3>${tiles(items.filter(it=>it&&it.url&&(!Array.isArray(it.for)||!it.for.length||it.for.includes('all'))).slice(0,12))}`;}
@@ -6985,7 +7003,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
    const rows=[['เหยื่อ',g.bait]];if(q&&q.alt&&q.alt!=='—')rows.push(['วิธีอื่น',q.alt]);rows.push(['สาย',g.line+(t&&t.line?' · '+t.line:'')],['เบ็ด/โย',g.hook]);
    if(t){rows.push(['ขนาด/น้ำหนัก',t.size],['แอ็คชั่น',t.action],['สีเหยื่อ',t.colour],['ช่วงเวลา',t.time]);if(t.drift)rows.push(['การลอยเรือ',t.drift]);}else if(prof!=='protected')rows.push(['น้ำหนัก',sinker(v)]);
    rows.push(['เคล็ดลับ',g.tip]);
-   return`<div class="anSp"><b>${i+1}. ${esc(x.sp.n)} ${x.v}%</b>${x.sp.like?`<div><small>${esc(x.sp.like)}</small></div>`:''}<div class="bar"><span class="fill" style="width:${x.v}%"></span></div><dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>${prof==='protected'?'':tiles(mediaFor(items,x.sp),g.hook+(t&&t.size?' · '+t.size:''))}</div>`;}).join('')+'<small>เปอร์เซ็นต์คือดัชนีความเหมาะสมของสภาพแวดล้อม ไม่ใช่โอกาสที่จะจับได้ · ขนาดและน้ำหนักคำนวณจากความลึก กระแส ลม และความใสของจุดนี้ เป็นคำแนะนำทั่วไป ตรวจกฎการประมงท้องถิ่นก่อน</small>';
+   return`<div class="anSp"><b>${i+1}. ${esc(x.sp.n)} ${x.v}%</b>${x.sp.like?`<div><small>${esc(x.sp.like)}</small></div>`:''}<div class="bar"><span class="fill" style="width:${x.v}%"></span></div><dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>${prof==='protected'?'':tiles((shop[x.sp.id]||[]).concat(mediaFor(items,x.sp)).slice(0,12),g.hook+(t&&t.size?' · '+t.size:''))}</div>`;}).join('')+'<small>เปอร์เซ็นต์คือดัชนีความเหมาะสมของสภาพแวดล้อม ไม่ใช่โอกาสที่จะจับได้ · ขนาดและน้ำหนักคำนวณจากความลึก กระแส ลม และความใสของจุดนี้ เป็นคำแนะนำทั่วไป ตรวจกฎการประมงท้องถิ่นก่อน</small>';
   body.innerHTML=`<div class="anHead"><b>📍 ${fx(p.lat,4)}, ${fx(p.lon,4)}</b><small>${new Date().toLocaleString()}</small></div>
    <h3>🔎 ทุกปัจจัยของจุดนี้</h3><div class="anGrid">${F.map(f=>`<div class="anF"><span class="i">${f[0]}</span><b>${f[1]}</b>${f[2]?`<small>${f[2]}</small>`:''}</div>`).join('')}</div>
    ${sp}<div id="seaMemBox"></div>`;
@@ -7273,7 +7291,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.59';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.60';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -7297,6 +7315,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  }
  const A={ready:false,flags:{},session:null,me:null,busy:false};
  window.SeaAccount=A;
+ window.seaApiBase=base;
 
  async function http(method,path,body,auth){
   const h={};if(body!==undefined)h['Content-Type']='application/json';

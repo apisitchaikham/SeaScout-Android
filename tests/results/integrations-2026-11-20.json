@@ -1,0 +1,259 @@
+{
+  "pass": 63,
+  "fail": 0,
+  "results": [
+    {
+      "name": "google: new user without privacy consent → 400",
+      "ok": true
+    },
+    {
+      "name": "google: sign-up 201, verified email, provider listed",
+      "ok": true
+    },
+    {
+      "name": "google: second sign-in 200 same user",
+      "ok": true
+    },
+    {
+      "name": "google: wrong audience → 401",
+      "ok": true
+    },
+    {
+      "name": "google: expired token → 401",
+      "ok": true
+    },
+    {
+      "name": "google: forged signature → 401",
+      "ok": true
+    },
+    {
+      "name": "google: wrong issuer → 401",
+      "ok": true
+    },
+    {
+      "name": "apple: links to existing account with same verified email",
+      "ok": true
+    },
+    {
+      "name": "email verify: code sent in Thai via provider",
+      "ok": true
+    },
+    {
+      "name": "email verify: wrong code → 400",
+      "ok": true
+    },
+    {
+      "name": "email verify: right code (with dash) → verified",
+      "ok": true
+    },
+    {
+      "name": "forgot: unknown email still 202 and sends nothing",
+      "ok": true
+    },
+    {
+      "name": "forgot: reset code emailed",
+      "ok": true
+    },
+    {
+      "name": "reset: wrong code → 400",
+      "ok": true
+    },
+    {
+      "name": "reset: ok",
+      "ok": true
+    },
+    {
+      "name": "reset: all sessions signed out",
+      "ok": true
+    },
+    {
+      "name": "reset: code cannot be reused",
+      "ok": true
+    },
+    {
+      "name": "reset: new password works",
+      "ok": true
+    },
+    {
+      "name": "admin: wrong password → 401",
+      "ok": true
+    },
+    {
+      "name": "admin: normal member cannot sign in to admin",
+      "ok": true
+    },
+    {
+      "name": "admin: owner login + file:// (null origin) CORS allowed",
+      "ok": true
+    },
+    {
+      "name": "admin CORS: null origin NOT allowed on member API",
+      "ok": true
+    },
+    {
+      "name": "admin: member token rejected on admin API",
+      "ok": true
+    },
+    {
+      "name": "admin: overview has users/security/config",
+      "ok": true
+    },
+    {
+      "name": "admin: search members",
+      "ok": true
+    },
+    {
+      "name": "admin: member detail without secrets",
+      "ok": true
+    },
+    {
+      "name": "admin: map store products to plans",
+      "ok": true
+    },
+    {
+      "name": "admin: risky flag needs confirm",
+      "ok": true
+    },
+    {
+      "name": "admin: flag change returns rollback values",
+      "ok": true
+    },
+    {
+      "name": "billing: account tokens for the store",
+      "ok": true
+    },
+    {
+      "name": "google play: verified → premium",
+      "ok": true
+    },
+    {
+      "name": "google play: entitlements now premium from server",
+      "ok": true
+    },
+    {
+      "name": "google play: purchase acknowledged",
+      "ok": true
+    },
+    {
+      "name": "google play: another account cannot claim the purchase → 409",
+      "ok": true
+    },
+    {
+      "name": "google play: unknown product → 400",
+      "ok": true
+    },
+    {
+      "name": "google RTDN: wrong audience → 401",
+      "ok": true
+    },
+    {
+      "name": "google RTDN: wrong service account → 401",
+      "ok": true
+    },
+    {
+      "name": "google RTDN: expiry applied → free",
+      "ok": true
+    },
+    {
+      "name": "app store: verified → pro",
+      "ok": true
+    },
+    {
+      "name": "app store: purchase made by another account → 409",
+      "ok": true
+    },
+    {
+      "name": "app store notification: refund re-checked with Apple → free",
+      "ok": true
+    },
+    {
+      "name": "admin: payment events listed, txn ids shortened",
+      "ok": true
+    },
+    {
+      "name": "admin: manual premium grant (30 days) applies",
+      "ok": true
+    },
+    {
+      "name": "admin: revoke needs confirm",
+      "ok": true
+    },
+    {
+      "name": "admin: revoke → free",
+      "ok": true
+    },
+    {
+      "name": "admin: per-user entitlement override",
+      "ok": true
+    },
+    {
+      "name": "admin: plan entitlement change",
+      "ok": true
+    },
+    {
+      "name": "admin roles: viewer can read but not grant",
+      "ok": true
+    },
+    {
+      "name": "admin roles: only owner manages admins",
+      "ok": true
+    },
+    {
+      "name": "admin: disable signs member out and blocks login",
+      "ok": true
+    },
+    {
+      "name": "admin: enable restores login",
+      "ok": true
+    },
+    {
+      "name": "commerce: offer URL must be https",
+      "ok": true
+    },
+    {
+      "name": "commerce: merchant/products/offers created",
+      "ok": true
+    },
+    {
+      "name": "commerce: whiting query returns the whiting hook first, English title, 2 images, own offer link",
+      "ok": true
+    },
+    {
+      "name": "commerce: squid jig not shown for whiting",
+      "ok": true
+    },
+    {
+      "name": "commerce: TH-only offer hidden in another country",
+      "ok": true
+    },
+    {
+      "name": "commerce: click redirect goes to that offer URL",
+      "ok": true
+    },
+    {
+      "name": "commerce: click counted for that offer",
+      "ok": true
+    },
+    {
+      "name": "commerce: unknown offer → 404 (no open redirect)",
+      "ok": true
+    },
+    {
+      "name": "commerce: merchant with offers cannot be deleted",
+      "ok": true
+    },
+    {
+      "name": "audit: admin actions recorded",
+      "ok": true
+    },
+    {
+      "name": "audit: no secrets in audit details",
+      "ok": true
+    },
+    {
+      "name": "admin: logout kills the admin token",
+      "ok": true
+    }
+  ],
+  "at": "2026-11-19T17:45:14.679Z"
+}

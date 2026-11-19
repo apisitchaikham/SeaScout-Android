@@ -24,7 +24,7 @@
         "ok": true,
         "version": "api-v1.0.0",
         "db": false,
-        "time": 1795107976127
+        "time": 1795110348606
       }
     },
     {
@@ -60,17 +60,17 @@
       "name": "register: 201 with tokens",
       "ok": true,
       "extra": {
-        "session_id": "ses_OMLSIVzRbF1sIvyY",
-        "access_token": "4HBB-AlpgAvdYSE25Omfcr1q2RoHqlIQSarn0iVkERM",
-        "access_expires_at": 1795111576234,
-        "refresh_token": "jx5pfT3ldTfn9qP1wPWzo80ZtDBlJhVlnZ_xqL9mgYQ",
-        "refresh_expires_at": 1800291976234,
+        "session_id": "ses_V-uxPeEeodGuxNpU",
+        "access_token": "8wgqUqH0z5QUiFEMmhAeqRSEUeFhpVQ6ECa1fJQDrY0",
+        "access_expires_at": 1795113948711,
+        "refresh_token": "XnngUvx3fjB7gbttqvKyxsTm1Nkwy-xo3q_c7Kikfxw",
+        "refresh_expires_at": 1800294348711,
         "token_type": "Bearer",
         "user": {
-          "id": "usr_uN7BFdZ1wzUG9gtm",
-          "email": "tester.pcsq90@example.com",
+          "id": "usr_v-ifg62YOm8pBo4U",
+          "email": "tester.14olvs@example.com",
           "email_verified": false,
-          "created_at": 1795107976209,
+          "created_at": 1795110348693,
           "has_password": true,
           "providers": []
         },
@@ -80,7 +80,7 @@
           "country": "US",
           "units": null,
           "marketing_consent": false,
-          "privacy_consent_at": 1795107976209,
+          "privacy_consent_at": 1795110348693,
           "privacy_version": "2026-11"
         },
         "plan": "free",
@@ -96,17 +96,17 @@
           "pattern_memory": false,
           "species_tackle": false
         },
-        "checked_at": 1795107976241
+        "checked_at": 1795110348718
       }
     },
     {
       "name": "register: email stored lower-case",
       "ok": true,
       "extra": {
-        "id": "usr_uN7BFdZ1wzUG9gtm",
-        "email": "tester.pcsq90@example.com",
+        "id": "usr_v-ifg62YOm8pBo4U",
+        "email": "tester.14olvs@example.com",
         "email_verified": false,
-        "created_at": 1795107976209,
+        "created_at": 1795110348693,
         "has_password": true,
         "providers": []
       }
@@ -159,17 +159,17 @@
       "name": "login: 200 with new tokens",
       "ok": true,
       "extra": {
-        "session_id": "ses_OKNw-xU15kEMDDrc",
-        "access_token": "xZqU_GHhoRsvKKlFs-vg4jgAr1cFOKN5kFMXs221j5w",
-        "access_expires_at": 1795111576360,
-        "refresh_token": "AqbSD4VqtXMECpucOEO4GeF8yItqMVUo7rEe-uqg9NU",
-        "refresh_expires_at": 1800291976360,
+        "session_id": "ses_kJlFpKywTLVHlXyC",
+        "access_token": "TOYcY2KKMC0_sy-IjPZc_NOLsniUQznHzaa5aruaRq8",
+        "access_expires_at": 1795113948811,
+        "refresh_token": "lvEgXguIuRy3K-BnM-AU7QKiQ7yLzCDQSCwSy_IgQ-o",
+        "refresh_expires_at": 1800294348811,
         "token_type": "Bearer",
         "user": {
-          "id": "usr_uN7BFdZ1wzUG9gtm",
-          "email": "tester.pcsq90@example.com",
+          "id": "usr_v-ifg62YOm8pBo4U",
+          "email": "tester.14olvs@example.com",
           "email_verified": false,
-          "created_at": 1795107976209,
+          "created_at": 1795110348693,
           "has_password": true,
           "providers": []
         },
@@ -179,7 +179,7 @@
           "country": "US",
           "units": null,
           "marketing_consent": false,
-          "privacy_consent_at": 1795107976209,
+          "privacy_consent_at": 1795110348693,
           "privacy_version": "2026-11"
         },
         "plan": "free",
@@ -195,7 +195,7 @@
           "pattern_memory": false,
           "species_tackle": false
         },
-        "checked_at": 1795107976368
+        "checked_at": 1795110348818
       }
     },
     {
@@ -211,10 +211,10 @@
       "ok": true,
       "extra": {
         "user": {
-          "id": "usr_uN7BFdZ1wzUG9gtm",
-          "email": "tester.pcsq90@example.com",
+          "id": "usr_v-ifg62YOm8pBo4U",
+          "email": "tester.14olvs@example.com",
           "email_verified": false,
-          "created_at": 1795107976209,
+          "created_at": 1795110348693,
           "has_password": true,
           "providers": []
         },
@@ -224,7 +224,7 @@
           "country": "US",
           "units": null,
           "marketing_consent": false,
-          "privacy_consent_at": 1795107976209,
+          "privacy_consent_at": 1795110348693,
           "privacy_version": "2026-11"
         },
         "plan": "free",
@@ -240,7 +240,7 @@
           "pattern_memory": false,
           "species_tackle": false
         },
-        "checked_at": 1795107976408
+        "checked_at": 1795110348847
       }
     },
     {
@@ -257,22 +257,22 @@
       "extra": {
         "devices": [
           {
-            "id": "dev_uV49TDM55tW80UVO",
+            "id": "dev__uMV4f4M-xV2i-l7",
             "platform": "ios",
             "model": "Test",
             "app_version": "1.0.58",
-            "created_at": 1795107976358,
-            "last_seen_at": 1795107976358,
+            "created_at": 1795110348810,
+            "last_seen_at": 1795110348810,
             "signed_in": true,
             "current": true
           },
           {
-            "id": "dev_v_w-ZB0niVNh3BkK",
+            "id": "dev_8tFqYo3cePmUuJQV",
             "platform": "android",
             "model": "Test",
             "app_version": "1.0.58",
-            "created_at": 1795107976233,
-            "last_seen_at": 1795107976233,
+            "created_at": 1795110348710,
+            "last_seen_at": 1795110348710,
             "signed_in": true,
             "current": false
           }
@@ -284,22 +284,22 @@
       "ok": true,
       "extra": [
         {
-          "id": "dev_uV49TDM55tW80UVO",
+          "id": "dev__uMV4f4M-xV2i-l7",
           "platform": "ios",
           "model": "Test",
           "app_version": "1.0.58",
-          "created_at": 1795107976358,
-          "last_seen_at": 1795107976358,
+          "created_at": 1795110348810,
+          "last_seen_at": 1795110348810,
           "signed_in": true,
           "current": true
         },
         {
-          "id": "dev_v_w-ZB0niVNh3BkK",
+          "id": "dev_8tFqYo3cePmUuJQV",
           "platform": "android",
           "model": "Test",
           "app_version": "1.0.58",
-          "created_at": 1795107976233,
-          "last_seen_at": 1795107976233,
+          "created_at": 1795110348710,
+          "last_seen_at": 1795110348710,
           "signed_in": true,
           "current": false
         }
@@ -309,11 +309,11 @@
       "name": "refresh: rotates tokens",
       "ok": true,
       "extra": {
-        "session_id": "ses_OMLSIVzRbF1sIvyY",
-        "access_token": "7oXTcTFVu7V_P0G9ZFPyzu_cYG6wrTbg8pqwpy64rLs",
-        "access_expires_at": 1795111576447,
-        "refresh_token": "siuMnGvEIIi-hR4_2kirQQcAxDPlA0BafjTc-rVmCGU",
-        "refresh_expires_at": 1800291976447,
+        "session_id": "ses_V-uxPeEeodGuxNpU",
+        "access_token": "zyOCPvGXR0gnvfuar0VaXbPMKNw5Djr38hF-yYmwRSE",
+        "access_expires_at": 1795113948875,
+        "refresh_token": "IMxguuZTT7MAVatcI8CEznfm44LEpadjXhfqy14p3IM",
+        "refresh_expires_at": 1800294348875,
         "token_type": "Bearer"
       }
     },
@@ -342,10 +342,10 @@
       "ok": true,
       "extra": {
         "user": {
-          "id": "usr_uN7BFdZ1wzUG9gtm",
-          "email": "tester.pcsq90@example.com",
+          "id": "usr_v-ifg62YOm8pBo4U",
+          "email": "tester.14olvs@example.com",
           "email_verified": false,
-          "created_at": 1795107976209,
+          "created_at": 1795110348693,
           "has_password": true,
           "providers": []
         },
@@ -355,7 +355,7 @@
           "country": "TH",
           "units": null,
           "marketing_consent": false,
-          "privacy_consent_at": 1795107976209,
+          "privacy_consent_at": 1795110348693,
           "privacy_version": "2026-11"
         },
         "plan": "free",
@@ -371,7 +371,7 @@
           "pattern_memory": false,
           "species_tackle": false
         },
-        "checked_at": 1795107976525
+        "checked_at": 1795110348941
       }
     },
     {
@@ -423,7 +423,7 @@
           "pattern_memory": false,
           "species_tackle": false
         },
-        "checked_at": 1795107976579
+        "checked_at": 1795110348988
       }
     },
     {
@@ -519,6 +519,10 @@
           "tester_unlock": {
             "enabled": true,
             "rollout_pct": 100
+          },
+          "commerce_api": {
+            "enabled": true,
+            "rollout_pct": 100
           }
         }
       }
@@ -555,17 +559,17 @@
       "name": "delete: email can be registered again",
       "ok": true,
       "extra": {
-        "session_id": "ses_fWTzVzRsMohnlvvA",
-        "access_token": "a9WDAvfzUpvrt5dkrllyZcOyAnYR0hfBePnUEfnJH0U",
-        "access_expires_at": 1795111577151,
-        "refresh_token": "PrwcRQC1KWCA74Q1C6CRjsk8sIrAUcJ1DGre3NUzMTs",
-        "refresh_expires_at": 1800291977151,
+        "session_id": "ses_AzktZ35KUebz2WQE",
+        "access_token": "qim6U-4enrhK-eteqLDOmjqjfL7Cafwdw_8K22hOTGs",
+        "access_expires_at": 1795113949446,
+        "refresh_token": "rNXNE9VOSe5QF8wh7mnYeqHVhkvHuWxMlwDRndE2nQ8",
+        "refresh_expires_at": 1800294349446,
         "token_type": "Bearer",
         "user": {
-          "id": "usr_61B6vmQJFTe93lJJ",
-          "email": "tester.pcsq90@example.com",
+          "id": "usr_7E1Izeo-s7uvmviG",
+          "email": "tester.14olvs@example.com",
           "email_verified": false,
-          "created_at": 1795107977128,
+          "created_at": 1795110349430,
           "has_password": true,
           "providers": []
         },
@@ -575,7 +579,7 @@
           "country": "US",
           "units": null,
           "marketing_consent": false,
-          "privacy_consent_at": 1795107977128,
+          "privacy_consent_at": 1795110349430,
           "privacy_version": "1"
         },
         "plan": "free",
@@ -591,7 +595,7 @@
           "pattern_memory": false,
           "species_tackle": false
         },
-        "checked_at": 1795107977158
+        "checked_at": 1795110349451
       }
     },
     {
@@ -609,5 +613,5 @@
       }
     }
   ],
-  "at": "2026-11-19T17:06:17.931Z"
+  "at": "2026-11-19T17:45:49.869Z"
 }

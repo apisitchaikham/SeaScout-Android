@@ -1,4 +1,4 @@
-# Sea Scout API v1 — ระบบสมาชิกกลาง (r14.15.59)
+# Sea Scout API v1 — ระบบสมาชิกกลาง (r14.15.59–60)
 
 ใช้ร่วมกันทั้ง Android, iOS และ SeaScout_Admin.html — อยู่ใน Worker เดิม `seascout` ที่ `/api/v1/*`
 ของเดิมไม่เปลี่ยน: หน้าแอป/ไฟล์ข้อมูล (assets) และ `/api/crash`
@@ -46,9 +46,20 @@
 | GET/POST | `/api/v1/me/devices` | Bearer | รายการอุปกรณ์ / ลงทะเบียน `{install_id, platform, model?, app_version?}` |
 | DELETE | `/api/v1/me/devices/{id}` | Bearer | ลบอุปกรณ์ + ออกจากระบบเครื่องนั้น |
 | DELETE | `/api/v1/me` | Bearer | ลบบัญชี `{password}` (หรือ `{confirm:"DELETE"}` สำหรับบัญชี Google/Apple) |
-| POST | `/api/v1/auth/google`, `/auth/apple` | – | **503** ยังไม่ตั้งค่า (ขั้นถัดไป) |
-| POST | `/api/v1/auth/password/forgot`, `/reset`, `/auth/email/verify` | – | **503** ยังไม่มีผู้ส่งอีเมล |
-| POST | `/api/v1/billing/google/verify`, `/billing/apple/verify` | – | **503** รอบัญชี Play Console / Apple |
+| POST | `/api/v1/auth/google`, `/auth/apple` | – | `{id_token, privacy_consent (ผู้ใช้ใหม่), device?}` → tokens + me (ตรวจกับ JWKS ของ Google/Apple) |
+| POST | `/api/v1/auth/password/forgot` | – | `{email}` → 202 เสมอ, ส่งรหัส 8 ตัวทางอีเมล |
+| POST | `/api/v1/auth/password/reset` | – | `{email, code, new_password}` (ออกจากทุกเครื่อง) |
+| POST | `/api/v1/auth/email/verify/request`, `/auth/email/verify` | Bearer | ขอรหัส / `{code}` ยืนยันอีเมล |
+| GET | `/api/v1/billing/account-tokens` | Bearer | ค่าที่แอปส่งให้ Store ตอนซื้อ + รายการสินค้า |
+| POST | `/api/v1/billing/google/verify` | Bearer | `{purchase_token}` → ถาม Google Play → subscription |
+| POST | `/api/v1/billing/google/notify` | OIDC (Pub/Sub) | RTDN |
+| POST | `/api/v1/billing/apple/verify` | Bearer | `{original_transaction_id}` → ถาม App Store Server API |
+| POST | `/api/v1/billing/apple/notify` | – | Server Notifications V2 (สถานะถามจาก Apple ใหม่ทุกครั้ง) |
+| GET | `/api/v1/commerce/items?species=&gear=&cat=&group=&lang=&country=` | – | สินค้า + รูป + ข้อเสนอที่เหมาะกับประเทศ |
+| GET | `/api/v1/go/{offer_id}` | – | 302 ไป URL ของข้อเสนอนั้น + นับคลิก |
+| * | `/api/v1/admin/*` | Admin Bearer | ดู `worker/api/admin.js` / SeaScout_Admin.html |
+
+ตั้งค่าบริการภายนอก: `docs/CONNECT_CHECKLIST_TH.md`
 
 `device` = `{ install_id: "[A-Za-z0-9_-]{8,64}", platform: "android"|"ios"|"web", model?, app_version? }`
 tokens = `{ session_id, access_token, access_expires_at, refresh_token, refresh_expires_at, token_type:"Bearer" }`
@@ -63,6 +74,8 @@ tokens = `{ session_id, access_token, access_expires_at, refresh_token, refresh_
 ราคาแพ็กเกจยังไม่กำหนด (ผูกกับสินค้าใน Store ผ่านตาราง `store_products`)
 
 ## ทดสอบ
+`tests/integrations.test.mjs` + `tests/mock-stores.mjs` (Google/Apple/Resend จำลอง): 63/63 ผ่าน — Google/Apple sign-in (aud/iss/exp/ลายเซ็นปลอม), รหัสอีเมล, Google Play verify/ack/RTDN, App Store verify/notification, Admin (roles, grant/revoke, disable, flags, audit), Commerce (https เท่านั้น, ประเทศ, redirect เฉพาะ offer, นับคลิก), XSS ใน Admin
+
 `tests/api.test.mjs` — รันกับ `wrangler dev` (D1 ในเครื่อง): ผล 61/61 ผ่าน ครอบคลุมของเดิมไม่เปลี่ยน, สมัคร/เข้าสู่ระบบ,
 Android+iOS บัญชีเดียว, หมุน token/ตรวจ token ซ้ำ, SQL injection, body ผิดรูป/ใหญ่เกิน, เปลี่ยนรหัส, ลบอุปกรณ์, ออกจากระบบ, ลบบัญชี, จำกัดการเดารหัส
 

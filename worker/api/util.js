@@ -16,9 +16,12 @@ export class ApiError extends Error {
 export function corsHeaders(request) {
   const o = request.headers.get('Origin');
   const h = { 'Vary': 'Origin' };
-  if (o && ORIGINS.has(o)) {
+  // SeaScout_Admin.html is opened from disk (file:// → Origin "null"); allowed for /api/v1/admin/* only (Bearer admin token, no cookies).
+  const path = new URL(request.url).pathname;
+  const adminFromFile = o === 'null' && (path.startsWith('/api/v1/admin/') || path === '/api/v1/health');
+  if (o && (ORIGINS.has(o) || adminFromFile)) {
     h['Access-Control-Allow-Origin'] = o;
-    h['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, DELETE, OPTIONS';
+    h['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
     h['Access-Control-Allow-Headers'] = 'Authorization, Content-Type';
     h['Access-Control-Max-Age'] = '600';
   }

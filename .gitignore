@@ -6,3 +6,5 @@ keystore.properties
 www/eot20/
 site/
 Claude outputs/
+.dev.vars
+.wrangler/

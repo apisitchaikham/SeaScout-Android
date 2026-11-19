@@ -4,29 +4,13 @@
 import { ApiError, VERSION, LOCALES, PLATFORMS, json, readJson, corsHeaders, cleanEmail, checkPassword, str,
   hashPassword, safeEqual, newId, clientIp, country, sha256 } from './util.js';
 import { audit, rateLimit, upsertDevice, createSession, authenticate, rotateRefresh, entitlementsFor } from './store.js';
+import { socialSignIn } from './social.js';
+import { forgot, reset, verifyRequest, verifyConfirm } from './email.js';
+import { googleVerify, googleNotify, appleVerify, appleNotify, billingTokens } from './billing.js';
+import { items as commerceItems, go as commerceGo } from './commerce.js';
+import { handleAdmin } from './admin.js';
 
-const PRIVACY_VERSION_RE = /^[0-9A-Za-z._-]{1,20}$/;
-
-function deviceFrom(body) {
-  const d = body && body.device;
-  if (!d || typeof d !== 'object') return null;
-  const install_id = str(d.install_id, 64);
-  if (!install_id || !/^[A-Za-z0-9_-]{8,64}$/.test(install_id)) throw new ApiError(400, 'invalid_device');
-  const platform = PLATFORMS.includes(d.platform) ? d.platform : null;
-  if (!platform) throw new ApiError(400, 'invalid_platform');
-  return { install_id, platform, model: str(d.model, 80), app_version: str(d.app_version, 40) };
-}
-
-async function meBody(db, userId) {
-  const u = await db.prepare('SELECT id, email, email_verified, created_at, password_hash IS NOT NULL AS has_password FROM users WHERE id = ?').bind(userId).first();
-  const p = await db.prepare('SELECT display_name, locale, country, units, marketing_consent, privacy_consent_at, privacy_version FROM user_profiles WHERE user_id = ?').bind(userId).first();
-  const ids = await db.prepare('SELECT provider FROM identities WHERE user_id = ?').bind(userId).all();
-  return {
-    user: { id: u.id, email: u.email, email_verified: !!u.email_verified, created_at: u.created_at, has_password: !!u.has_password, providers: ids.results.map((r) => r.provider) },
-    profile: p ? { ...p, marketing_consent: !!p.marketing_consent } : null,
-    ...(await entitlementsFor(db, userId)),
-  };
-}
+import { PRIVACY_VERSION_RE, deviceFrom, meBody } from './common.js';
 
 // ---------- handlers ----------
 async function register(req, env) {
@@ -191,7 +175,6 @@ async function flags(req, env) {
   return json(req, 200, { flags: out }, { 'Cache-Control': 'public, max-age=60' });
 }
 
-const notYet = (code) => async (req) => json(req, 503, { error: code, message: 'Not configured on the server yet' });
 
 // ---------- router ----------
 const ROUTES = [
@@ -199,11 +182,12 @@ const ROUTES = [
   ['POST', /^\/api\/v1\/auth\/login$/, login],
   ['POST', /^\/api\/v1\/auth\/refresh$/, refresh],
   ['POST', /^\/api\/v1\/auth\/logout$/, logout],
-  ['POST', /^\/api\/v1\/auth\/google$/, notYet('google_signin_not_configured')],
-  ['POST', /^\/api\/v1\/auth\/apple$/, notYet('apple_signin_not_configured')],
-  ['POST', /^\/api\/v1\/auth\/password\/forgot$/, notYet('email_not_configured')],
-  ['POST', /^\/api\/v1\/auth\/password\/reset$/, notYet('email_not_configured')],
-  ['POST', /^\/api\/v1\/auth\/email\/verify$/, notYet('email_not_configured')],
+  ['POST', /^\/api\/v1\/auth\/google$/, socialSignIn('google')],
+  ['POST', /^\/api\/v1\/auth\/apple$/, socialSignIn('apple')],
+  ['POST', /^\/api\/v1\/auth\/password\/forgot$/, forgot],
+  ['POST', /^\/api\/v1\/auth\/password\/reset$/, reset],
+  ['POST', /^\/api\/v1\/auth\/email\/verify\/request$/, verifyRequest],
+  ['POST', /^\/api\/v1\/auth\/email\/verify$/, verifyConfirm],
   ['GET', /^\/api\/v1\/me$/, me],
   ['PATCH', /^\/api\/v1\/me\/profile$/, patchProfile],
   ['POST', /^\/api\/v1\/me\/password$/, changePassword],
@@ -212,27 +196,38 @@ const ROUTES = [
   ['POST', /^\/api\/v1\/me\/devices$/, registerDevice],
   ['DELETE', /^\/api\/v1\/me\/devices\/(dev_[A-Za-z0-9_-]{16})$/, removeDevice],
   ['DELETE', /^\/api\/v1\/me$/, deleteAccount],
-  ['POST', /^\/api\/v1\/billing\/google\/verify$/, notYet('billing_not_configured')],
-  ['POST', /^\/api\/v1\/billing\/apple\/verify$/, notYet('billing_not_configured')],
+  ['POST', /^\/api\/v1\/billing\/google\/verify$/, googleVerify],
+  ['POST', /^\/api\/v1\/billing\/google\/notify$/, googleNotify],
+  ['POST', /^\/api\/v1\/billing\/apple\/verify$/, appleVerify],
+  ['POST', /^\/api\/v1\/billing\/apple\/notify$/, appleNotify],
+  ['GET', /^\/api\/v1\/billing\/account-tokens$/, billingTokens],
+  ['GET', /^\/api\/v1\/commerce\/items$/, commerceItems],
+  ['GET', /^\/api\/v1\/go\/(off_[A-Za-z0-9_-]{16})$/, commerceGo],
   ['GET', /^\/api\/v1\/flags$/, flags],
 ];
+
+function errorResponse(request, url, e) {
+  if (e instanceof ApiError) return json(request, e.status, { error: e.code, ...(e.message !== e.code ? { message: e.message } : {}) });
+  console.log(JSON.stringify({ seascout: 'api_error', path: url.pathname, err: String(e && e.stack || e).slice(0, 800) }));
+  return json(request, 500, { error: 'server_error' });
+}
 
 export async function handleApi(request, env) {
   const url = new URL(request.url);
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request) });
   if (url.pathname === '/api/v1/health') return json(request, 200, { ok: true, version: VERSION, db: !!env.DB, time: Date.now() });
   if (!env.DB) return json(request, 503, { error: 'backend_not_configured' });
+  if (url.pathname.startsWith('/api/v1/admin/')) {
+    try { return await handleAdmin(request, env, url.pathname.slice('/api/v1/admin/'.length)); }
+    catch (e) { return errorResponse(request, url, e); }
+  }
   let methodMismatch = false;
   for (const [m, re, fn] of ROUTES) {
     const hit = re.exec(url.pathname);
     if (!hit) continue;
     if (m !== request.method) { methodMismatch = true; continue; }
     try { return await fn(request, env, hit[1]); }
-    catch (e) {
-      if (e instanceof ApiError) return json(request, e.status, { error: e.code, ...(e.message !== e.code ? { message: e.message } : {}) });
-      console.log(JSON.stringify({ seascout: 'api_error', path: url.pathname, err: String(e && e.stack || e).slice(0, 800) }));
-      return json(request, 500, { error: 'server_error' });
-    }
+    catch (e) { return errorResponse(request, url, e); }
   }
   return json(request, methodMismatch ? 405 : 404, { error: methodMismatch ? 'method_not_allowed' : 'not_found' });
 }

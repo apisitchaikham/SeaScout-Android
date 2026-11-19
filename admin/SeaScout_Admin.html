@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https: data:; connect-src https://*.workers.dev https://*.seascout.app http://127.0.0.1:* http://localhost:*; base-uri 'none'; form-action 'none'">
+<title>Sea Scout · Admin</title>
+<style>
+:root{--bg:#f5f7f9;--panel:#fff;--ink:#14212b;--mute:#5b6b77;--line:#d8e0e6;--acc:#0b84a5;--bad:#c62828;--ok:#2e7d32;--warn:#b26a00;--r:10px}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1a22;--panel:#132631;--ink:#e3eef2;--mute:#90a6b3;--line:#24404f;--acc:#29c3f0}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+header b{font-size:16px}header .sp{flex:1}header small{color:var(--mute)}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+nav button{border:1px solid transparent;background:none;color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer}
+nav button.on{background:var(--acc);color:#fff}
+main{padding:16px;max-width:1200px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.kpi b{display:block;font-size:22px}.kpi span{color:var(--mute);font-size:12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mute);font-weight:500;font-size:12px}
+tr.click{cursor:pointer}tr.click:hover{background:color-mix(in srgb,var(--acc) 8%,transparent)}
+input,select,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+textarea{width:100%;min-height:60px}
+button.b{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+button.p{background:var(--acc);border-color:var(--acc);color:#fff}button.d{border-color:var(--bad);color:var(--bad)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--line);margin:1px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.mute{color:var(--mute)}
+#msg{position:fixed;right:16px;bottom:16px;max-width:420px;padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--bg);display:none;z-index:9}
+#login{max-width:380px;margin:60px auto}#login input{width:100%;margin:4px 0 10px}
+h2{font-size:16px;margin:0 0 10px}h3{font-size:14px;margin:12px 0 6px}
+code{font-size:12px}.hide{display:none}
+</style>
+</head>
+<body>
+<header><b>🌊 Sea Scout · Admin</b><span class="sp"></span><small id="who"></small><button class="b hide" id="outBtn">ออกจากระบบ</button></header>
+<nav id="nav" class="hide"></nav>
+<main>
+ <div id="login" class="card">
+  <h2>เข้าสู่ระบบผู้ดูแล</h2>
+  <small class="mute">ใช้บัญชี Sea Scout ที่มีสิทธิ์ผู้ดูแล · ไฟล์นี้ไม่เก็บรหัสผ่านหรือคีย์ใดๆ · token อยู่ในแท็บนี้เท่านั้นและหมดอายุใน 2 ชม.</small>
+  <label>Server<input id="api" value="https://seascout.apisit-chaikham.workers.dev"></label>
+  <label>อีเมล<input id="em" type="email" autocomplete="username"></label>
+  <label>รหัสผ่าน<input id="pw" type="password" autocomplete="current-password"></label>
+  <button class="b p" id="goBtn">เข้าสู่ระบบ</button> <span id="lmsg" class="bad"></span>
+ </div>
+ <div id="view"></div>
+</main>
+<div id="msg"></div>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dt=t=>t?new Date(t).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):'—';
+const S={api:'',token:'',role:'',email:'',tab:'overview'};
+const RANK={viewer:0,support:1,admin:2,owner:3};const can=r=>RANK[S.role]>=RANK[r];
+function toast(t,bad){const m=$('#msg');m.textContent=t;m.style.background=bad?'#c62828':'';m.style.display='block';clearTimeout(m._t);m._t=setTimeout(()=>m.style.display='none',4000);}
+async function api(method,path,body){
+ const r=await fetch(S.api+'/api/v1/admin/'+path,{method,headers:Object.assign({Authorization:'Bearer '+S.token},body!==undefined?{'Content-Type':'application/json'}:{}),body:body!==undefined?JSON.stringify(body):undefined});
+ let j=null;try{j=await r.json();}catch(_){}
+ if(r.status===401&&path!=='login'){logout(true);throw new Error('หมดเวลา · เข้าสู่ระบบใหม่');}
+ if(!r.ok)throw new Error((j&&j.error)||('HTTP '+r.status));
+ return j;
+}
+const ask=t=>window.confirm(t);
+// ---------- login ----------
+$('#api').value=sessionStorage.getItem('ssAdmApi')||$('#api').value;
+$('#goBtn').onclick=async()=>{
+ S.api=$('#api').value.trim().replace(/\/+$/,'');$('#lmsg').textContent='';
+ if(!/^https:\/\/|^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(S.api)){$('#lmsg').textContent='ต้องเป็น https://';return;}
+ try{const r=await fetch(S.api+'/api/v1/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('#em').value,password:$('#pw').value})});
+  const j=await r.json().catch(()=>null);if(!r.ok)throw new Error(j&&j.error==='too_many_requests'?'พยายามหลายครั้งเกินไป รอ 15 นาที':'อีเมล/รหัสผ่านไม่ถูกต้อง หรือไม่มีสิทธิ์ผู้ดูแล');
+  Object.assign(S,{token:j.token,role:j.role,email:j.email});$('#pw').value='';sessionStorage.setItem('ssAdmApi',S.api);
+  sessionStorage.setItem('ssAdm',JSON.stringify({api:S.api,token:S.token,role:S.role,email:S.email,exp:j.expires_at}));start();
+ }catch(e){$('#lmsg').textContent=e.message;}
+};
+$('#pw').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click();};
+function logout(silent){if(!silent&&S.token)api('POST','logout',{}).catch(()=>{});S.token='';sessionStorage.removeItem('ssAdm');$('#login').classList.remove('hide');$('#nav').classList.add('hide');$('#outBtn').classList.add('hide');$('#view').innerHTML='';$('#who').textContent='';}
+$('#outBtn').onclick=()=>logout(false);
+const TABS=[['overview','ภาพรวม'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
+function start(){
+ $('#login').classList.add('hide');$('#nav').classList.remove('hide');$('#outBtn').classList.remove('hide');$('#who').textContent=S.email+' · '+S.role;
+ $('#nav').innerHTML=TABS.filter(t=>t[0]!=='admins'||can('owner')).map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
+ $('#nav').onclick=e=>{const t=e.target.dataset.t;if(t){S.tab=t;show();}};show();
+}
+async function show(){
+ document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
+ const v=$('#view');v.innerHTML='<div class="card mute">กำลังโหลด…</div>';
+ try{await VIEWS[S.tab](v);}catch(e){v.innerHTML=`<div class="card bad">${esc(e.message)}</div>`;}
+}
+const kpi=(n,l,c)=>`<div class="card kpi"><b class="${c||''}">${esc(n)}</b><span>${esc(l)}</span></div>`;
+const yes=v=>v?'<span class="ok">✔ พร้อม</span>':'<span class="warn">✖ ยังไม่ตั้งค่า</span>';
+const VIEWS={
+ async overview(v){
+  const o=await api('GET','overview');const subs={};(o.subscriptions||[]).forEach(s=>subs[s.plan_id]=(subs[s.plan_id]||0)+s.n);
+  const dev=Object.fromEntries((o.devices||[]).map(d=>[d.platform,d.n]));
+  v.innerHTML=`<div class="grid">${kpi(o.users.total||0,'สมาชิกทั้งหมด')}${kpi(o.users.new_7d||0,'สมัครใหม่ 7 วัน')}${kpi(o.active.online||0,'ออนไลน์ (5 นาที)')}${kpi(o.active.d1||0,'ใช้งาน 24 ชม.')}${kpi(o.active.d30||0,'ใช้งาน 30 วัน')}
+   ${kpi(subs.premium||0,'Premium')}${kpi(subs.pro||0,'Pro')}${kpi((dev.android||0)+' / '+(dev.ios||0)+' / '+(dev.web||0),'อุปกรณ์ Android / iOS / เว็บ')}${kpi(o.affiliate_clicks_7d,'คลิก Affiliate 7 วัน')}
+   ${kpi(o.security_24h.login_fail||0,'เข้าสู่ระบบผิด 24 ชม.',(o.security_24h.login_fail||0)>50?'bad':'')}${kpi(o.security_24h.token_reuse||0,'ตรวจพบ token ซ้ำ 24 ชม.',(o.security_24h.token_reuse||0)?'bad':'')}</div>
+   <div class="card"><h2>สถานะระบบที่ต้องใช้บัญชีภายนอก</h2><table>
+   <tr><td>เข้าสู่ระบบด้วย Google</td><td>${yes(o.config.google_signin)}</td></tr><tr><td>Sign in with Apple</td><td>${yes(o.config.apple_signin)}</td></tr>
+   <tr><td>อีเมล (ยืนยัน/รีเซ็ตรหัส)</td><td>${yes(o.config.email)}</td></tr><tr><td>Google Play Billing</td><td>${yes(o.config.google_billing)} · RTDN ${yes(o.config.google_rtdn)}</td></tr>
+   <tr><td>App Store (StoreKit)</td><td>${yes(o.config.apple_billing)}</td></tr></table><small class="mute">อัปเดต ${dt(o.at)} · วิธีตั้งค่า: docs/API_V1_TH.md</small></div>`;
+ },
+ async members(v){
+  v.innerHTML=`<div class="card"><div class="row"><input id="q" placeholder="ค้นหาอีเมล หรือ user id" style="flex:1"><button class="b" id="qb">ค้นหา</button></div><div id="ul"></div></div><div id="ud"></div>`;
+  const load=async()=>{const r=await api('GET','users?limit=100&q='+encodeURIComponent($('#q').value.trim()));
+   $('#ul').innerHTML=`<table><tr><th>อีเมล</th><th>แพ็กเกจ</th><th>สถานะ</th><th>สมัคร</th><th>ใช้ล่าสุด</th></tr>${r.users.map(u=>`<tr class="click" data-id="${esc(u.id)}"><td>${esc(u.email)}${u.email_verified?' <span class="ok">✔</span>':''}</td><td>${esc(u.plan)}</td><td class="${u.status==='active'?'':'bad'}">${esc(u.status)}</td><td>${dt(u.created_at)}</td><td>${dt(u.last_seen)}</td></tr>`).join('')||'<tr><td colspan="5" class="mute">ไม่พบ</td></tr>'}</table>`;
+   $('#ul').querySelectorAll('tr.click').forEach(t=>t.onclick=()=>detail(t.dataset.id));};
+  $('#qb').onclick=load;$('#q').onkeydown=e=>{if(e.key==='Enter')load();};await load();
+  async function detail(id){
+   const d=await api('GET','users/'+id),u=d.user;
+   $('#ud').innerHTML=`<div class="card"><h2>${esc(u.email)} <small class="mute">${esc(u.id)}</small></h2>
+    <div class="row"><span class="tag">${esc(u.status)}</span>${u.email_verified?'<span class="tag ok">อีเมลยืนยันแล้ว</span>':''}${d.providers.map(p=>`<span class="tag">${esc(p.provider)}</span>`).join('')}<span class="tag">session ที่ใช้อยู่ ${d.sessions_active}</span><span class="tag">ประเทศ ${esc(d.profile&&d.profile.country||'—')}</span><span class="tag">ภาษา ${esc(d.profile&&d.profile.locale||'—')}</span></div>
+    <h3>การสมัครสมาชิก</h3><table><tr><th>แพ็กเกจ</th><th>ที่มา</th><th>สถานะ</th><th>หมดอายุ</th><th></th></tr>${d.subscriptions.map(s=>`<tr><td>${esc(s.plan_id)}</td><td>${esc(s.source)} ${esc(s.store_product_id||'')}</td><td>${esc(s.status)}</td><td>${dt(s.expires_at)}</td><td>${(s.source==='manual'&&s.status==='active'&&can('support'))?`<button class="b d" data-rv="${esc(s.id)}">ยกเลิก</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="mute">Free</td></tr>'}</table>
+    ${can('support')?`<div class="row"><select id="gp"><option value="premium">Premium</option><option value="pro">Pro</option></select><input id="gd" type="number" min="0" value="30" style="width:80px"> วัน (0 = ไม่หมดอายุ)<input id="gn" placeholder="หมายเหตุ" style="flex:1"><button class="b p" id="gb">ให้สิทธิ์</button></div>`:''}
+    <h3>สิทธิ์เฉพาะคน</h3><table>${d.entitlements.map(e=>`<tr><td>${esc(e.key)}</td><td>${esc(e.value)}</td><td>${esc(e.source)}</td><td>${dt(e.expires_at)}</td><td>${can('admin')?`<button class="b" data-de="${esc(e.key)}">ลบ</button>`:''}</td></tr>`).join('')||'<tr><td class="mute">ไม่มี</td></tr>'}</table>
+    ${can('admin')?`<div class="row"><input id="ek" placeholder="key เช่น ai_quota_daily"><input id="ev" placeholder="ค่า เช่น 50 หรือ true"><input id="edays" type="number" placeholder="วัน" style="width:80px"><button class="b" id="eb">ตั้งค่า</button></div>`:''}
+    <h3>อุปกรณ์</h3><table>${d.devices.map(x=>`<tr><td>${esc(x.platform)}</td><td>${esc(x.model||'')}</td><td>${esc(x.app_version||'')}</td><td>${dt(x.last_seen_at)}</td></tr>`).join('')||'<tr><td class="mute">ไม่มี</td></tr>'}</table>
+    <div class="row">${can('support')?'<button class="b" id="so">ออกจากระบบทุกเครื่อง</button>':''}${can('admin')?(u.status==='active'?'<button class="b d" id="ds">ระงับบัญชี</button>':'<button class="b" id="en">เปิดใช้บัญชี</button>'):''}</div>
+    <h3>ประวัติ (50 รายการล่าสุด)</h3><table>${d.audit.map(a=>`<tr><td>${dt(a.at)}</td><td>${esc(a.actor_type)}</td><td>${esc(a.action)}</td><td class="mute">${esc(a.details||'')}</td></tr>`).join('')}</table></div>`;
+   const re=()=>detail(id);
+   const on=(sel,fn)=>{const e=$('#ud '+sel);if(e)e.onclick=async()=>{try{await fn();toast('บันทึกแล้ว');re();}catch(x){toast(x.message,true);}};};
+   on('#gb',()=>api('POST',`users/${id}/subscriptions`,{plan:$('#gp').value,days:+$('#gd').value,note:$('#gn').value}));
+   on('#so',()=>api('POST',`users/${id}/signout`,{}));
+   on('#ds',async()=>{if(!ask('ระงับบัญชีนี้? ผู้ใช้จะถูกออกจากระบบทุกเครื่อง'))throw new Error('ยกเลิก');return api('POST',`users/${id}/disable`,{confirm:true});});
+   on('#en',()=>api('POST',`users/${id}/enable`,{confirm:true}));
+   on('#eb',()=>{let val=$('#ev').value.trim();val=val==='true'?true:val==='false'?false:(isNaN(+val)||val===''?val:+val);return api('PUT',`users/${id}/entitlements/${encodeURIComponent($('#ek').value.trim())}`,{value:val,days:+$('#edays').value||undefined});});
+   $('#ud').querySelectorAll('[data-rv]').forEach(b=>b.onclick=async()=>{if(!ask('ยกเลิกสิทธิ์นี้?'))return;try{await api('POST',`users/${id}/subscriptions/${b.dataset.rv}/revoke`,{confirm:true});toast('ยกเลิกแล้ว');re();}catch(x){toast(x.message,true);}});
+   $('#ud').querySelectorAll('[data-de]').forEach(b=>b.onclick=async()=>{try{await api('DELETE',`users/${id}/entitlements/${b.dataset.de}`);re();}catch(x){toast(x.message,true);}});
+   $('#ud').scrollIntoView({behavior:'smooth'});
+  }
+ },
+ async traffic(v){
+  const t0=performance.now();const h=await fetch(S.api+'/api/v1/health').then(r=>r.json()).catch(()=>null);const ms=Math.round(performance.now()-t0);
+  const o=await api('GET','overview');
+  v.innerHTML=`<div class="grid">${kpi(h&&h.ok?'ทำงาน':'ล่ม','API',h&&h.ok?'ok':'bad')}${kpi(ms+' ms','เวลาตอบ (จากเครื่องนี้)')}${kpi(h&&h.db?'เชื่อมแล้ว':'ไม่เชื่อม','D1',h&&h.db?'ok':'bad')}${kpi(h?h.version:'—','เวอร์ชัน API')}${kpi(o.security_24h.events||0,'เหตุการณ์ 24 ชม.')}</div>
+   <div class="card"><h2>API ที่มีอยู่</h2><table>
+   <tr><td>/api/v1/auth/* · /me/*</td><td>สมาชิก (สมัคร, เข้าสู่ระบบ, Google, Apple, อีเมล, อุปกรณ์, ลบบัญชี)</td><td class="ok">ใช้งาน</td></tr>
+   <tr><td>/api/v1/billing/*</td><td>Google Play / App Store</td><td>${o.config.google_billing||o.config.apple_billing?'<span class="ok">ใช้งาน</span>':'<span class="warn">รอตั้งค่า</span>'}</td></tr>
+   <tr><td>/api/v1/commerce/items · /go/*</td><td>สินค้า + ติดตามคลิก</td><td class="ok">ใช้งาน</td></tr>
+   <tr><td>/api/crash</td><td>รายงานข้อผิดพลาดจากแอป (ดูใน Cloudflare Logs)</td><td class="ok">ใช้งาน</td></tr>
+   <tr><td>seascout-cache</td><td>proxy ข้อมูล NOAA (Worker แยก)</td><td class="mute">ดูใน Cloudflare</td></tr></table>
+   <p class="mute">Requests/วินาที, error rate, P50/P95, CPU time, การใช้ D1/R2/KV และค่าใช้จ่าย: Cloudflare Dashboard → Workers → seascout → Observability / Metrics และ D1 → seascout-db → Metrics (ยังไม่ได้ดึงเข้ามาในหน้านี้ ต้องใช้ API token ฝั่ง server)</p>
+   <p class="mute">AI Monitor: ยังไม่มี AI engine บน server (การวิเคราะห์ตอนนี้ทำในแอป)</p></div>`;
+ },
+ async flags(v){
+  const r=await api('GET','flags');
+  v.innerHTML=`<div class="card"><h2>เปิด/ปิดฟังก์ชัน</h2><table><tr><th>flag</th><th>คำอธิบาย</th><th>เปิด</th><th>rollout %</th><th>แก้ล่าสุด</th><th></th></tr>${r.flags.map(f=>`<tr><td><code>${esc(f.key)}</code></td><td>${esc(f.description||'')}</td><td><input type="checkbox" data-k="${esc(f.key)}" ${f.enabled?'checked':''} ${can('admin')?'':'disabled'}></td><td><input type="number" min="0" max="100" value="${f.rollout_pct}" data-p="${esc(f.key)}" style="width:70px" ${can('admin')?'':'disabled'}></td><td>${dt(f.updated_at)} ${esc(f.updated_by||'')}</td><td>${can('admin')?`<button class="b" data-s="${esc(f.key)}">บันทึก</button>`:''}</td></tr>`).join('')}</table>
+   <p class="mute"><code>server_premium</code> = แอปเชื่อสิทธิ์จาก server (เปิดเมื่อ Billing พร้อม) · <code>tester_unlock</code> = รหัสผู้ทดสอบเดิม · <code>accounts</code> = หน้าจอบัญชีในแอป</p></div>`;
+  v.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{const k=b.dataset.s,body={enabled:v.querySelector(`[data-k="${k}"]`).checked,rollout_pct:+v.querySelector(`[data-p="${k}"]`).value};
+   if(['server_premium','accounts'].includes(k)){if(!ask(`เปลี่ยน ${k}? มีผลกับผู้ใช้ทุกคนทันที`))return;body.confirm=true;}
+   try{const x=await api('PATCH','flags/'+k,body);toast(`บันทึกแล้ว (ย้อนกลับ: enabled=${x.rollback.enabled}, ${x.rollback.rollout_pct}%)`);show();}catch(e){toast(e.message,true);}});
+ },
+ async plans(v){
+  const r=await api('GET','plans');const keys=[...new Set(r.entitlements.map(e=>e.key))];const val=(p,k)=>(r.entitlements.find(e=>e.plan_id===p&&e.key===k)||{}).value;
+  v.innerHTML=`<div class="card"><h2>สิทธิ์ของแต่ละแพ็กเกจ</h2><table><tr><th>key</th>${r.plans.map(p=>`<th>${esc(p.name)}</th>`).join('')}</tr>${keys.map(k=>`<tr><td><code>${esc(k)}</code></td>${r.plans.map(p=>`<td><input value="${esc(val(p.id,k)||'')}" data-pk="${esc(p.id)}|${esc(k)}" style="width:90px" ${can('admin')?'':'disabled'}></td>`).join('')}</tr>`).join('')}</table>
+   ${can('admin')?'<button class="b p" id="ps">บันทึกที่แก้</button>':''}</div>
+   <div class="card"><h2>สินค้าใน Store → แพ็กเกจ</h2><table><tr><th>Store</th><th>Product ID</th><th>แพ็กเกจ</th><th>รอบ</th></tr>${r.store_products.map(s=>`<tr><td>${esc(s.store)}</td><td><code>${esc(s.product_id)}</code></td><td>${esc(s.plan_id)}</td><td>${esc(s.period||'')}</td></tr>`).join('')||'<tr><td colspan="4" class="mute">ยังไม่มี · เพิ่มหลังสร้างสินค้าใน Play Console / App Store Connect</td></tr>'}</table>
+   ${can('admin')?`<div class="row"><select id="ss"><option>google</option><option>apple</option></select><input id="sid" placeholder="product id เช่น seascout_premium_monthly" style="flex:1"><select id="sp"><option>premium</option><option>pro</option></select><input id="sper" placeholder="P1M / P1Y" style="width:80px"><button class="b" id="sb">เพิ่ม/แก้</button></div>`:''}</div>`;
+  const ps=$('#ps');if(ps)ps.onclick=async()=>{let n=0;for(const i of v.querySelectorAll('[data-pk]')){const[p,k]=i.dataset.pk.split('|'),old=val(p,k)||'';if(i.value===old)continue;let x;try{x=JSON.parse(i.value);}catch(_){x=i.value;}await api('PUT',`plans/${p}/entitlements/${k}`,{value:x});n++;}toast('บันทึก '+n+' ค่า');show();};
+  const sb=$('#sb');if(sb)sb.onclick=async()=>{try{await api('PUT','store-products',{store:$('#ss').value,product_id:$('#sid').value.trim(),plan_id:$('#sp').value,period:$('#sper').value.trim()||undefined});toast('บันทึกแล้ว');show();}catch(e){toast(e.message,true);}};
+ },
+ async commerce(v){
+  const r=await api('GET','commerce');const clicks=Object.fromEntries(r.clicks_30d.map(c=>[c.offer_id,c.n]));
+  const mName=id=>(r.merchants.find(m=>m.id===id)||{}).name||id;
+  v.innerHTML=`<div class="card"><h2>ร้านค้า</h2><table>${r.merchants.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.kind)}</td><td>${m.active?'':'<span class="bad">ปิด</span>'}</td></tr>`).join('')||'<tr><td class="mute">ยังไม่มี</td></tr>'}</table>
+   ${can('admin')?'<div class="row"><input id="mn" placeholder="ชื่อร้าน เช่น Shopee TH"><select id="mk"><option>shopee</option><option>lazada</option><option>amazon</option><option>awin</option><option>impact</option><option>direct</option><option>other</option></select><button class="b" id="mb">เพิ่มร้าน</button></div>':''}</div>
+   <div class="card"><h2>สินค้า</h2><table><tr><th>สินค้า</th><th>ใช้กับ (tags)</th><th>รูป</th><th>ข้อเสนอ (ร้าน · ประเทศ · ราคา · คลิก 30 วัน)</th><th></th></tr>${r.products.map(p=>{const im=r.images.filter(i=>i.product_id===p.id),of=r.offers.filter(o=>o.product_id===p.id);
+    return `<tr><td><b>${esc(p.title)}</b>${p.active?'':' <span class="bad">ปิด</span>'}<br><small class="mute">${esc(p.description||'')}</small></td><td>${JSON.parse(p.tags||'[]').map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</td><td>${im.map(i=>`<img src="${esc(i.url)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px" referrerpolicy="no-referrer">`).join(' ')}</td>
+    <td>${of.map(o=>`<div>${esc(mName(o.merchant_id))} · ${esc(o.country)} · ${o.price!=null?esc(o.price)+' '+esc(o.currency||''):'—'} · <b>${clicks[o.id]||0}</b> คลิก ${can('admin')?`<button class="b d" data-do="${esc(o.id)}">ลบ</button>`:''}</div>`).join('')||'<span class="warn">ไม่มีข้อเสนอ (จะไม่แสดงในแอป)</span>'}</td><td>${can('admin')?`<button class="b" data-ep="${esc(p.id)}">แก้</button> <button class="b d" data-dp="${esc(p.id)}">ลบ</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="5" class="mute">ยังไม่มีสินค้า</td></tr>'}</table></div>
+   ${can('admin')?`<div class="card" id="pf"><h2 id="pft">เพิ่มสินค้า</h2><input type="hidden" id="pid">
+    <div class="row"><input id="pt" placeholder="ชื่อสินค้า (ไทย)" style="flex:1"><input id="pten" placeholder="ชื่อภาษาอังกฤษ" style="flex:1"></div>
+    <textarea id="pd" placeholder="คำอธิบาย (ไทย)"></textarea><textarea id="pden" placeholder="คำอธิบายภาษาอังกฤษ"></textarea>
+    <div class="row"><input id="ptags" placeholder="tags คั่นด้วย , เช่น xsl, light, coast หรือ all" style="flex:1"><input id="psort" type="number" placeholder="ลำดับ" style="width:80px"><label><input type="checkbox" id="pact" checked> แสดง</label></div>
+    <textarea id="pimg" placeholder="ลิงก์รูป https://… บรรทัดละ 1 รูป (หลายรูปได้ เลื่อนดูในแอป)"></textarea>
+    <div class="row"><button class="b p" id="psv">บันทึกสินค้า</button><button class="b" id="pclr">ล้างฟอร์ม</button></div>
+    <h3>เพิ่มข้อเสนอ (ลิงก์ Affiliate ของสินค้านี้)</h3>
+    <div class="row"><select id="op">${r.products.map(p=>`<option value="${esc(p.id)}">${esc(p.title)}</option>`).join('')}</select><select id="om">${r.merchants.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}</select>
+     <input id="oc" placeholder="ประเทศ TH หรือ *" style="width:110px"><input id="opr" type="number" step="0.01" placeholder="ราคา" style="width:100px"><input id="ocur" placeholder="THB" style="width:70px"></div>
+    <div class="row"><input id="ou" placeholder="ลิงก์ Affiliate https://…" style="flex:1"><button class="b p" id="osv">เพิ่มข้อเสนอ</button></div>
+    <p class="mute">ใช้ tags เพื่อเลือกว่าสินค้าขึ้นใต้ชนิดไหน: รหัสชนิด (xsl = ปลาเห็ดโคน, u = หมึกกล้วย…), โปรไฟล์อุปกรณ์ (squid, light, reef, pelagic…), กลุ่มที่อยู่ (coast, reef…), squid/fish หรือ all</p></div>`:''}`;
+  if(!can('admin'))return;
+  const val=id=>$(id).value.trim();
+  $('#mb').onclick=async()=>{try{await api('POST','merchants',{name:val('#mn'),kind:$('#mk').value});show();}catch(e){toast(e.message,true);}};
+  $('#pclr').onclick=()=>{['#pid','#pt','#pten','#pd','#pden','#ptags','#psort','#pimg'].forEach(s=>$(s).value='');$('#pft').textContent='เพิ่มสินค้า';};
+  $('#psv').onclick=async()=>{const id=val('#pid');const body={title:val('#pt'),title_i18n:val('#pten')?{en:val('#pten')}:null,description:val('#pd'),desc_i18n:val('#pden')?{en:val('#pden')}:null,tags:val('#ptags').split(',').map(s=>s.trim()).filter(Boolean),sort:+val('#psort')||0,active:$('#pact').checked,images:val('#pimg').split('\n').map(s=>s.trim()).filter(Boolean).map(url=>({url}))};
+   try{await api(id?'PUT':'POST',id?'products/'+id:'products',body);toast('บันทึกสินค้าแล้ว');show();}catch(e){toast(e.message==='invalid_url'?'ลิงก์รูปต้องเป็น https://':e.message,true);}};
+  $('#osv').onclick=async()=>{try{await api('POST','offers',{product_id:$('#op').value,merchant_id:$('#om').value,country:(val('#oc')||'*').toUpperCase()==='*'?'*':val('#oc').toUpperCase(),price:val('#opr'),currency:val('#ocur')||undefined,url:val('#ou')});toast('เพิ่มข้อเสนอแล้ว');show();}catch(e){toast(e.message==='invalid_url'?'ลิงก์ต้องเป็น https://':e.message,true);}};
+  v.querySelectorAll('[data-ep]').forEach(b=>b.onclick=()=>{const p=r.products.find(x=>x.id===b.dataset.ep),en=k=>{try{return(JSON.parse(p[k]||'{}')||{}).en||'';}catch(_){return'';}};
+   $('#pid').value=p.id;$('#pt').value=p.title;$('#pten').value=en('title_i18n');$('#pd').value=p.description||'';$('#pden').value=en('desc_i18n');$('#ptags').value=JSON.parse(p.tags||'[]').join(', ');$('#psort').value=p.sort;$('#pact').checked=!!p.active;
+   $('#pimg').value=r.images.filter(i=>i.product_id===p.id).map(i=>i.url).join('\n');$('#pft').textContent='แก้สินค้า';$('#pf').scrollIntoView({behavior:'smooth'});});
+  v.querySelectorAll('[data-dp]').forEach(b=>b.onclick=async()=>{if(!ask('ลบสินค้านี้และข้อเสนอทั้งหมด?'))return;try{await api('DELETE','products/'+b.dataset.dp,{confirm:true});show();}catch(e){toast(e.message,true);}});
+  v.querySelectorAll('[data-do]').forEach(b=>b.onclick=async()=>{if(!ask('ลบข้อเสนอนี้?'))return;try{await api('DELETE','offers/'+b.dataset.do,{confirm:true});show();}catch(e){toast(e.message,true);}});
+ },
+ async payments(v){
+  const r=await api('GET','payments');
+  v.innerHTML=`<div class="card"><h2>เหตุการณ์การชำระเงิน (200 ล่าสุด)</h2><table><tr><th>เวลา</th><th>Store</th><th>ประเภท</th><th>ผล</th><th>สมาชิก</th><th>รายการ</th></tr>${r.events.map(e=>`<tr><td>${dt(e.received_at)}</td><td>${esc(e.store)}</td><td>${esc(e.event_type)}</td><td>${esc(e.result||'')}</td><td><code>${esc(e.user_id||'—')}</code></td><td><code>${esc(e.store_txn_id||'')}</code></td></tr>`).join('')||'<tr><td colspan="6" class="mute">ยังไม่มี</td></tr>'}</table></div>`;
+ },
+ async logs(v){
+  v.innerHTML=`<div class="card"><div class="row"><select id="la"><option value="">ทุกเหตุการณ์</option>${['login_fail','admin_login_fail','admin_login','refresh_reuse_detected','register','account_delete','grant_subscription','revoke_subscription','flag_change','disable_user','password_reset','subscription_active','subscription_expired','subscription_revoked'].map(a=>`<option>${a}</option>`).join('')}</select><select id="lt"><option value="">ทุกผู้กระทำ</option><option>user</option><option>admin</option><option>system</option><option>store</option></select><button class="b" id="lb">แสดง</button></div><div id="ll"></div></div>`;
+  const load=async()=>{const r=await api('GET',`audit?limit=300&action=${encodeURIComponent($('#la').value)}&actor_type=${encodeURIComponent($('#lt').value)}`);
+   $('#ll').innerHTML=`<table><tr><th>เวลา</th><th>ผู้กระทำ</th><th>เหตุการณ์</th><th>เป้าหมาย</th><th>รายละเอียด</th><th>ประเทศ</th></tr>${r.logs.map(l=>`<tr><td>${dt(l.at)}</td><td>${esc(l.actor_type)} <code>${esc((l.actor_id||'').slice(0,12))}</code></td><td class="${/fail|reuse|disable|delete|revoke/.test(l.action)?'warn':''}">${esc(l.action)}</td><td><code>${esc(l.target||'')}</code></td><td class="mute">${esc(l.details||'')}</td><td>${esc(l.country||'')}</td></tr>`).join('')}</table>`;};
+  $('#lb').onclick=load;await load();
+ },
+ async admins(v){
+  const r=await api('GET','admins');
+  v.innerHTML=`<div class="card"><h2>ผู้ดูแล</h2><table><tr><th>อีเมล</th><th>บทบาท</th><th>สถานะ</th></tr>${r.admins.map(a=>`<tr><td>${esc(a.email)}</td><td>${esc(a.role)}</td><td>${a.disabled?'<span class="bad">ปิด</span>':'ใช้งาน'}</td></tr>`).join('')}</table>
+   <div class="row"><input id="ae" type="email" placeholder="อีเมล (ต้องสมัครบัญชี Sea Scout ก่อน)" style="flex:1"><select id="ar"><option>viewer</option><option>support</option><option>admin</option><option>owner</option></select><label><input type="checkbox" id="ad"> ปิดสิทธิ์</label><button class="b p" id="ab">บันทึก</button></div>
+   <p class="mute">viewer = ดูอย่างเดียว · support = ให้/ยกเลิกสิทธิ์, ออกจากระบบให้สมาชิก · admin = + flags, แพ็กเกจ, สินค้า, ระงับบัญชี · owner = + จัดการผู้ดูแล</p></div>`;
+  $('#ab').onclick=async()=>{if(!ask('บันทึกสิทธิ์ผู้ดูแล?'))return;try{await api('PUT','admins',{email:$('#ae').value.trim(),role:$('#ar').value,disabled:$('#ad').checked,confirm:true});toast('บันทึกแล้ว');show();}catch(e){toast(e.message,true);}};
+ }
+};
+try{const s=JSON.parse(sessionStorage.getItem('ssAdm')||'null');if(s&&s.exp>Date.now()){Object.assign(S,s);start();}}catch(_){}
+})();
+</script>
+</body>
+</html>
