@@ -12,5 +12,11 @@
       "smallIcon": "ic_stat_sea",
       "iconColor": "#0b84a5"
     }
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#06263a",
+    "scrollEnabled": false,
+    "limitsNavigationsToAppBoundDomains": false
   }
 }

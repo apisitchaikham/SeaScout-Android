@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.57-species-gear-2026-11-19">
+<meta name="sea-scout-build" content="standalone-r14.15.58-ios-android-2026-11-19">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.57 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.58 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -491,7 +491,7 @@ const SeaWorldTide=(()=>{
  function base(){
   let v='';try{v=String(localStorage.getItem(KEY)||'').trim();}catch(_){}
   if(v)return v.replace(/\/*$/,'/');
-  if(/^https?:$/.test(location.protocol))return new URL('eot20/',location.href).href;  // same site as the app
+  if(/^(https?|capacitor):$/.test(location.protocol))return new URL('eot20/',location.href).href;  // same site as the app
   return '';
  }
  function setBase(v){try{v=String(v||'').trim();if(v)localStorage.setItem(KEY,v);else localStorage.removeItem(KEY);}catch(_){}astro=null;astroP=null;shared=null;failedBase=null;tiles.clear();packs.clear();}
@@ -661,7 +661,7 @@ const SeaAwois=(()=>{
  let rows=null,p=null;
  const inUS=bb=>bb.n>=14.5&&bb.s<=66.5&&(bb.w<=-60||bb.e>=140);
  async function load(){if(rows)return rows;if(p)return p;p=(async()=>{
-   const base=(typeof SeaWorldTide!=='undefined'&&SeaWorldTide.base())?SeaWorldTide.base().replace(/eot20\/?$/,'awois/'):(/^https?:$/.test(location.protocol)?new URL('awois/',location.href).href:'');
+   const base=(typeof SeaWorldTide!=='undefined'&&SeaWorldTide.base())?SeaWorldTide.base().replace(/eot20\/?$/,'awois/'):(/^(https?|capacitor):$/.test(location.protocol)?new URL('awois/',location.href).href:'');
    if(!base)return[];let d=null;try{d=await tideDbGet('awois|v1');}catch(_){}
    if(!d){let r=await fetch(base+'awois.json.gz').catch(()=>null);if(!r||!r.ok)r=await fetch(base+'awois.json').catch(()=>null);if(!r||!r.ok)return[];let u=new Uint8Array(await r.arrayBuffer());if(u[0]===0x1f&&u[1]===0x8b)u=new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());d=JSON.parse(new TextDecoder().decode(u));try{await tideDbPut('awois|v1',d);}catch(_){}}
    rows=(d.rows||[]).map(r=>({id:r[0],kind:SEA_HAZ_KINDS[r[1]],lat:r[2],lon:r[3],name:r[4]||'',depthM:r[5]??null,waterLevel:'',category:r[7]||'',isArea:false,src:'NOAA AWOIS'}));return rows;})();return p;}
@@ -761,7 +761,7 @@ async function seaResilientMarine(b,m){
  const on=()=>{try{return localStorage.getItem(KEY)!=='off';}catch(_){return true;}};
  const NOISE=/Failed to fetch|NetworkError|Load failed|AbortError|aborted|timeout|หมดเวลา|ResizeObserver loop|Script error\.?$/i;
  let sent=0;const seen=new Set();
- const ua=navigator.userAgent||'',plat=/Android/i.test(ua)?'android':/iPhone|iPad|iOS/i.test(ua)?'ios':/Windows/i.test(ua)?'windows':/Mac/i.test(ua)?'mac':/Linux/i.test(ua)?'linux':'other';
+ const ua=navigator.userAgent||'',plat=window.Capacitor?.getPlatform?.()&&window.Capacitor.getPlatform()!=='web'?window.Capacitor.getPlatform():/Android/i.test(ua)?'android':(/iPhone|iPad|iOS/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1))?'ios':/Windows/i.test(ua)?'windows':/Mac/i.test(ua)?'mac':/Linux/i.test(ua)?'linux':'other';
  const chrome=(ua.match(/Chrome\/(\d+)/)||[])[1]||'';
  function build(){try{return document.querySelector('meta[name=sea-scout-build]').content;}catch(_){return'';}}
  function send(k,m,s,src){
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.57</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.58</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.57 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.58 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.57-species-gear-2026-11-19
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.57-species-gear-2026-11-19';
+// SEA_SCOUT_BUILD=standalone-r14.15.58-ios-android-2026-11-19
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.58-ios-android-2026-11-19';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -4473,7 +4473,7 @@ NAV.trackLine=null;
 // first, and in-app browsers (LINE, Facebook, Messenger, Instagram…) that block location get a clear hint.
 function seaInAppBrowser(){return /\bLine\/|FBAN|FBAV|FB_IAB|Instagram|Messenger|MicroMessenger|TikTok|KAKAOTALK|Zalo/i.test(navigator.userAgent||'');}
 function seaGpsHelp(code){
- const ua=navigator.userAgent||'',android=/Android/i.test(ua),ios=/iPhone|iPad|iPod/i.test(ua);
+ const ua=navigator.userAgent||'',android=/Android/i.test(ua),ios=/iPhone|iPad|iPod/i.test(ua)||window.Capacitor?.getPlatform?.()==='ios'||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
  if(seaInAppBrowser())return 'แอปแชทบล็อก GPS · กดเมนู ⋮ หรือ ··· แล้วเลือก "เปิดในเบราว์เซอร์" (Chrome/Safari)';
  if(code===1)return android?'ไม่ได้รับอนุญาตใช้ตำแหน่ง · แตะไอคอนข้างช่องที่อยู่เว็บ → สิทธิ์ → ตำแหน่ง → อนุญาต แล้วกด GPS อีกครั้ง':ios?'ไม่ได้รับอนุญาตใช้ตำแหน่ง · การตั้งค่า → ความเป็นส่วนตัว → บริการหาตำแหน่ง → เปิด และ Safari → ขณะใช้แอป แล้วโหลดหน้าใหม่':'ไม่ได้รับอนุญาตใช้ตำแหน่ง · อนุญาตตำแหน่งในเบราว์เซอร์แล้วกด GPS อีกครั้ง';
  if(code===2)return 'หาตำแหน่งไม่ได้ · เปิด "ตำแหน่ง / Location" ของมือถือ (ปัดแถบด้านบนลง) แล้วกด GPS อีกครั้ง';
@@ -5251,9 +5251,9 @@ const SEA_HAZ_KINDS=['rock','reef','wreck','obstruction','shoal'];
 const SeaWorldHazards=(()=>{
  const KEY='seaScoutHazardsUrl',blocks=new Map();let index=null,indexP=null,failed=null;
  function base(){let v='';try{v=String(localStorage.getItem(KEY)||'').trim();}catch(_){}if(v)return v.replace(/\/*$/,'/');
-  if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&/^https?:$/.test(location.protocol))return 'https://seascout.apisit-chaikham.workers.dev/hazards/'; // r14.15.42: the Android app reads the pack from the website
+  if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&/^(https?|capacitor):$/.test(location.protocol))return 'https://seascout.apisit-chaikham.workers.dev/hazards/'; // r14.15.42: the Android app reads the pack from the website
   const t=(typeof SeaWorldTide!=='undefined')?SeaWorldTide.base():'';if(t)return t.replace(/eot20\/?$/,'hazards/');
-  return /^https?:$/.test(location.protocol)?new URL('hazards/',location.href).href:'';}
+  return /^(https?|capacitor):$/.test(location.protocol)?new URL('hazards/',location.href).href:'';}
  async function gunzip(buf){const u=new Uint8Array(buf,0,2);if(!(u[0]===0x1f&&u[1]===0x8b))return buf;return await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();}
  async function getIndex(){
   const b=base();if(!b||failed===b)return null;if(index)return index;if(indexP)return indexP;
@@ -5348,10 +5348,12 @@ try{if(new URLSearchParams(location.search).get('tool')==='hazards')window.addEv
 </script>
 <script>try{SeaI18n.start();}catch(e){console.error("i18n start",e);}</script>
 <script>
-// r14.15.24: native (Capacitor/Android) extras. Everything here is a no-op in a normal browser.
+// r14.15.24: native (Capacitor) extras. Everything here is a no-op in a normal browser.
+// r14.15.58: one code path for Android and iOS — platform-only APIs are guarded by `plat`.
 (function(){
  const cap=window.Capacitor,native=!!cap?.isNativePlatform?.();if(!native)return;
- const P=cap.Plugins||{};
+ const P=cap.Plugins||{},plat=(cap.getPlatform&&cap.getPlatform())||'android';
+ window.SEA_PLATFORM=plat;try{if(typeof SeaPlatform!=='undefined')SeaPlatform.name=plat==='ios'?'iOS (Capacitor)':'Android (Capacitor)';}catch(_){}
  // 1) GPS that keeps running with the screen off: foreground service from @capacitor-community/background-geolocation.
  if(P.BackgroundGeolocation&&typeof SeaPlatform!=='undefined'){
   const g=SeaPlatform.geo,oldWatch=g.watch.bind(g),oldClear=g.clear.bind(g);
@@ -5374,17 +5376,20 @@ try{if(new URLSearchParams(location.search).get('tool')==='hazards')window.addEv
  }
  // 2) Alarm notifications on a loud, high-priority channel (the foreground-service channel is silent).
  if(P.LocalNotifications){
-  try{P.LocalNotifications.createChannel({id:'sea-alarm',name:seaT('สัญญาณเตือนในทะเล'),description:seaT('สมอลาก · อันตรายข้างหน้า · ถึงจุดแวะ'),importance:5,visibility:1,vibration:true,lights:true,lightColor:'#FF0000'});}catch(_){}
+  // Android only: notification channels do not exist on iOS
+  if(plat==='android')try{Promise.resolve(P.LocalNotifications.createChannel({id:'sea-alarm',name:seaT('สัญญาณเตือนในทะเล'),description:seaT('สมอลาก · อันตรายข้างหน้า · ถึงจุดแวะ'),importance:5,visibility:1,vibration:true,lights:true,lightColor:'#FF0000'})).catch(()=>{});}catch(_){}
   const oldAlarm=SeaPlatform.alarm.bind(SeaPlatform);
   SeaPlatform.alarm=function(o={}){
    const urgent=o.urgent!==false;
    // sound + vibration from the shared code, but send the notification ourselves on the alarm channel
    const LN=P.LocalNotifications;P.LocalNotifications=null;try{oldAlarm(o);}finally{P.LocalNotifications=LN;}
-   try{LN.schedule({notifications:[{id:(Date.now()%2e9)|0,title:seaT(o.title||'Sea Scout'),body:seaT(o.body||''),channelId:'sea-alarm',smallIcon:'ic_stat_sea',autoCancel:true,ongoing:false,extra:{urgent}}]});}catch(_){}
+   try{const n={id:(Date.now()%2e9)|0,title:seaT(o.title||'Sea Scout'),body:seaT(o.body||''),autoCancel:true,extra:{urgent}};
+    if(plat==='android')Object.assign(n,{channelId:'sea-alarm',smallIcon:'ic_stat_sea',ongoing:false}); // iOS uses its default alert sound
+    Promise.resolve(LN.schedule({notifications:[n]})).catch(()=>{});}catch(_){}
   };
  }
  // 3) Android back button: close an open panel/dialog first; never kill the app while GPS/anchor/track is running.
- if(P.App){
+ if(P.App&&plat==='android'){
   P.App.addListener('backButton',()=>{
    const dlg=[...document.querySelectorAll('dialog[open]')].pop();if(dlg){dlg.close();return;}
    const busyNav=(typeof NAV!=='undefined'&&NAV.watchId)||(typeof ANCHOR!=='undefined'&&ANCHOR.on)||(typeof TRACKREC!=='undefined'&&TRACKREC.on);
@@ -5392,7 +5397,7 @@ try{if(new URLSearchParams(location.search).get('tool')==='hazards')window.addEv
    P.App.minimizeApp();if(!busyNav){/* stays in recents; Android may reclaim it later */}
   });
  }
- document.documentElement.classList.add('sea-native');
+ document.documentElement.classList.add('sea-native','sea-'+plat);
 })();
 
 </script>
