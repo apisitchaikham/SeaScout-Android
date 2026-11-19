@@ -1,0 +1,613 @@
+{
+  "pass": 61,
+  "fail": 0,
+  "results": [
+    {
+      "name": "existing: / still serves the app page",
+      "ok": true,
+      "extra": 200
+    },
+    {
+      "name": "existing: /api/crash still 204",
+      "ok": true,
+      "extra": 204
+    },
+    {
+      "name": "existing: /api/crash GET still 405",
+      "ok": true,
+      "extra": 405
+    },
+    {
+      "name": "no DB: health says db=false",
+      "ok": true,
+      "extra": {
+        "ok": true,
+        "version": "api-v1.0.0",
+        "db": false,
+        "time": 1795107976127
+      }
+    },
+    {
+      "name": "no DB: other routes 503 backend_not_configured",
+      "ok": true,
+      "extra": {
+        "error": "backend_not_configured"
+      }
+    },
+    {
+      "name": "register: invalid email → 400",
+      "ok": true,
+      "extra": {
+        "error": "invalid_email"
+      }
+    },
+    {
+      "name": "register: short password → 400",
+      "ok": true,
+      "extra": {
+        "error": "password_too_short",
+        "message": "Use at least 10 characters"
+      }
+    },
+    {
+      "name": "register: no privacy consent → 400",
+      "ok": true,
+      "extra": {
+        "error": "privacy_consent_required"
+      }
+    },
+    {
+      "name": "register: 201 with tokens",
+      "ok": true,
+      "extra": {
+        "session_id": "ses_OMLSIVzRbF1sIvyY",
+        "access_token": "4HBB-AlpgAvdYSE25Omfcr1q2RoHqlIQSarn0iVkERM",
+        "access_expires_at": 1795111576234,
+        "refresh_token": "jx5pfT3ldTfn9qP1wPWzo80ZtDBlJhVlnZ_xqL9mgYQ",
+        "refresh_expires_at": 1800291976234,
+        "token_type": "Bearer",
+        "user": {
+          "id": "usr_uN7BFdZ1wzUG9gtm",
+          "email": "tester.pcsq90@example.com",
+          "email_verified": false,
+          "created_at": 1795107976209,
+          "has_password": true,
+          "providers": []
+        },
+        "profile": {
+          "display_name": null,
+          "locale": "th",
+          "country": "US",
+          "units": null,
+          "marketing_consent": false,
+          "privacy_consent_at": 1795107976209,
+          "privacy_version": "2026-11"
+        },
+        "plan": "free",
+        "subscription": null,
+        "entitlements": {
+          "advanced_forecast": false,
+          "ai_quota_daily": 0,
+          "heatmap": false,
+          "heatmap_forecast": false,
+          "navigation": "basic",
+          "ocean_data": "basic",
+          "offline_regions": 1,
+          "pattern_memory": false,
+          "species_tackle": false
+        },
+        "checked_at": 1795107976241
+      }
+    },
+    {
+      "name": "register: email stored lower-case",
+      "ok": true,
+      "extra": {
+        "id": "usr_uN7BFdZ1wzUG9gtm",
+        "email": "tester.pcsq90@example.com",
+        "email_verified": false,
+        "created_at": 1795107976209,
+        "has_password": true,
+        "providers": []
+      }
+    },
+    {
+      "name": "register: starts on free plan, heatmap locked",
+      "ok": true,
+      "extra": {
+        "advanced_forecast": false,
+        "ai_quota_daily": 0,
+        "heatmap": false,
+        "heatmap_forecast": false,
+        "navigation": "basic",
+        "ocean_data": "basic",
+        "offline_regions": 1,
+        "pattern_memory": false,
+        "species_tackle": false
+      }
+    },
+    {
+      "name": "register: no password data in response",
+      "ok": true
+    },
+    {
+      "name": "CORS: Android origin allowed",
+      "ok": true
+    },
+    {
+      "name": "register: duplicate email → 409",
+      "ok": true,
+      "extra": {
+        "error": "email_taken"
+      }
+    },
+    {
+      "name": "login: wrong password → 401 invalid_credentials",
+      "ok": true,
+      "extra": {
+        "error": "invalid_credentials"
+      }
+    },
+    {
+      "name": "login: unknown email gives the same answer",
+      "ok": true,
+      "extra": {
+        "error": "invalid_credentials"
+      }
+    },
+    {
+      "name": "login: 200 with new tokens",
+      "ok": true,
+      "extra": {
+        "session_id": "ses_OKNw-xU15kEMDDrc",
+        "access_token": "xZqU_GHhoRsvKKlFs-vg4jgAr1cFOKN5kFMXs221j5w",
+        "access_expires_at": 1795111576360,
+        "refresh_token": "AqbSD4VqtXMECpucOEO4GeF8yItqMVUo7rEe-uqg9NU",
+        "refresh_expires_at": 1800291976360,
+        "token_type": "Bearer",
+        "user": {
+          "id": "usr_uN7BFdZ1wzUG9gtm",
+          "email": "tester.pcsq90@example.com",
+          "email_verified": false,
+          "created_at": 1795107976209,
+          "has_password": true,
+          "providers": []
+        },
+        "profile": {
+          "display_name": null,
+          "locale": "th",
+          "country": "US",
+          "units": null,
+          "marketing_consent": false,
+          "privacy_consent_at": 1795107976209,
+          "privacy_version": "2026-11"
+        },
+        "plan": "free",
+        "subscription": null,
+        "entitlements": {
+          "advanced_forecast": false,
+          "ai_quota_daily": 0,
+          "heatmap": false,
+          "heatmap_forecast": false,
+          "navigation": "basic",
+          "ocean_data": "basic",
+          "offline_regions": 1,
+          "pattern_memory": false,
+          "species_tackle": false
+        },
+        "checked_at": 1795107976368
+      }
+    },
+    {
+      "name": "CORS: iOS origin allowed",
+      "ok": true
+    },
+    {
+      "name": "CORS: unknown origin gets no allow-origin header",
+      "ok": true
+    },
+    {
+      "name": "me: returns user + entitlements",
+      "ok": true,
+      "extra": {
+        "user": {
+          "id": "usr_uN7BFdZ1wzUG9gtm",
+          "email": "tester.pcsq90@example.com",
+          "email_verified": false,
+          "created_at": 1795107976209,
+          "has_password": true,
+          "providers": []
+        },
+        "profile": {
+          "display_name": null,
+          "locale": "th",
+          "country": "US",
+          "units": null,
+          "marketing_consent": false,
+          "privacy_consent_at": 1795107976209,
+          "privacy_version": "2026-11"
+        },
+        "plan": "free",
+        "subscription": null,
+        "entitlements": {
+          "advanced_forecast": false,
+          "ai_quota_daily": 0,
+          "heatmap": false,
+          "heatmap_forecast": false,
+          "navigation": "basic",
+          "ocean_data": "basic",
+          "offline_regions": 1,
+          "pattern_memory": false,
+          "species_tackle": false
+        },
+        "checked_at": 1795107976408
+      }
+    },
+    {
+      "name": "me: no token → 401",
+      "ok": true
+    },
+    {
+      "name": "me: forged token → 401",
+      "ok": true
+    },
+    {
+      "name": "devices: same account on android + ios",
+      "ok": true,
+      "extra": {
+        "devices": [
+          {
+            "id": "dev_uV49TDM55tW80UVO",
+            "platform": "ios",
+            "model": "Test",
+            "app_version": "1.0.58",
+            "created_at": 1795107976358,
+            "last_seen_at": 1795107976358,
+            "signed_in": true,
+            "current": true
+          },
+          {
+            "id": "dev_v_w-ZB0niVNh3BkK",
+            "platform": "android",
+            "model": "Test",
+            "app_version": "1.0.58",
+            "created_at": 1795107976233,
+            "last_seen_at": 1795107976233,
+            "signed_in": true,
+            "current": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "devices: current device marked",
+      "ok": true,
+      "extra": [
+        {
+          "id": "dev_uV49TDM55tW80UVO",
+          "platform": "ios",
+          "model": "Test",
+          "app_version": "1.0.58",
+          "created_at": 1795107976358,
+          "last_seen_at": 1795107976358,
+          "signed_in": true,
+          "current": true
+        },
+        {
+          "id": "dev_v_w-ZB0niVNh3BkK",
+          "platform": "android",
+          "model": "Test",
+          "app_version": "1.0.58",
+          "created_at": 1795107976233,
+          "last_seen_at": 1795107976233,
+          "signed_in": true,
+          "current": false
+        }
+      ]
+    },
+    {
+      "name": "refresh: rotates tokens",
+      "ok": true,
+      "extra": {
+        "session_id": "ses_OMLSIVzRbF1sIvyY",
+        "access_token": "7oXTcTFVu7V_P0G9ZFPyzu_cYG6wrTbg8pqwpy64rLs",
+        "access_expires_at": 1795111576447,
+        "refresh_token": "siuMnGvEIIi-hR4_2kirQQcAxDPlA0BafjTc-rVmCGU",
+        "refresh_expires_at": 1800291976447,
+        "token_type": "Bearer"
+      }
+    },
+    {
+      "name": "refresh: old access token stops working",
+      "ok": true
+    },
+    {
+      "name": "refresh: new access token works",
+      "ok": true
+    },
+    {
+      "name": "refresh: re-using an old refresh token → 401",
+      "ok": true
+    },
+    {
+      "name": "refresh: re-use revokes the whole session family",
+      "ok": true
+    },
+    {
+      "name": "refresh: other device session unaffected",
+      "ok": true
+    },
+    {
+      "name": "profile: update ok, SQL text stored as plain text",
+      "ok": true,
+      "extra": {
+        "user": {
+          "id": "usr_uN7BFdZ1wzUG9gtm",
+          "email": "tester.pcsq90@example.com",
+          "email_verified": false,
+          "created_at": 1795107976209,
+          "has_password": true,
+          "providers": []
+        },
+        "profile": {
+          "display_name": "Robert'); DROP TABLE users;--",
+          "locale": "en",
+          "country": "TH",
+          "units": null,
+          "marketing_consent": false,
+          "privacy_consent_at": 1795107976209,
+          "privacy_version": "2026-11"
+        },
+        "plan": "free",
+        "subscription": null,
+        "entitlements": {
+          "advanced_forecast": false,
+          "ai_quota_daily": 0,
+          "heatmap": false,
+          "heatmap_forecast": false,
+          "navigation": "basic",
+          "ocean_data": "basic",
+          "offline_regions": 1,
+          "pattern_memory": false,
+          "species_tackle": false
+        },
+        "checked_at": 1795107976525
+      }
+    },
+    {
+      "name": "profile: users table still there",
+      "ok": true
+    },
+    {
+      "name": "profile: invalid locale → 400",
+      "ok": true,
+      "extra": {
+        "error": "invalid_locale"
+      }
+    },
+    {
+      "name": "login: SQL-ish email rejected/failed safely",
+      "ok": true,
+      "extra": {
+        "error": "invalid_email"
+      }
+    },
+    {
+      "name": "body: malformed JSON → 400",
+      "ok": true,
+      "extra": {
+        "error": "invalid_json"
+      }
+    },
+    {
+      "name": "body: oversize → 413",
+      "ok": true,
+      "extra": {
+        "error": "body_too_large"
+      }
+    },
+    {
+      "name": "entitlements: free plan from server",
+      "ok": true,
+      "extra": {
+        "plan": "free",
+        "subscription": null,
+        "entitlements": {
+          "advanced_forecast": false,
+          "ai_quota_daily": 0,
+          "heatmap": false,
+          "heatmap_forecast": false,
+          "navigation": "basic",
+          "ocean_data": "basic",
+          "offline_regions": 1,
+          "pattern_memory": false,
+          "species_tackle": false
+        },
+        "checked_at": 1795107976579
+      }
+    },
+    {
+      "name": "password: wrong current → 401",
+      "ok": true,
+      "extra": {
+        "error": "invalid_credentials"
+      }
+    },
+    {
+      "name": "password: change ok",
+      "ok": true,
+      "extra": {
+        "ok": true,
+        "other_sessions_signed_out": true
+      }
+    },
+    {
+      "name": "password: other sessions signed out",
+      "ok": true
+    },
+    {
+      "name": "password: current session kept",
+      "ok": true
+    },
+    {
+      "name": "password: old password no longer works",
+      "ok": true
+    },
+    {
+      "name": "password: new password works",
+      "ok": true
+    },
+    {
+      "name": "devices: remove ok",
+      "ok": true,
+      "extra": {
+        "ok": true
+      }
+    },
+    {
+      "name": "devices: removing the device signs it out",
+      "ok": true
+    },
+    {
+      "name": "devices: other/unknown id → 401/404",
+      "ok": true,
+      "extra": {
+        "error": "unauthorized"
+      }
+    },
+    {
+      "name": "logout: ok",
+      "ok": true
+    },
+    {
+      "name": "logout: token dead",
+      "ok": true
+    },
+    {
+      "name": "logout: refresh dead",
+      "ok": true
+    },
+    {
+      "name": "google sign-in: 503 not configured",
+      "ok": true,
+      "extra": {
+        "error": "google_signin_not_configured",
+        "message": "Not configured on the server yet"
+      }
+    },
+    {
+      "name": "forgot password: 503 email not configured",
+      "ok": true,
+      "extra": {
+        "error": "email_not_configured",
+        "message": "Not configured on the server yet"
+      }
+    },
+    {
+      "name": "flags: readable",
+      "ok": true,
+      "extra": {
+        "flags": {
+          "accounts": {
+            "enabled": true,
+            "rollout_pct": 100
+          },
+          "server_premium": {
+            "enabled": false,
+            "rollout_pct": 100
+          },
+          "tester_unlock": {
+            "enabled": true,
+            "rollout_pct": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown route → 404",
+      "ok": true
+    },
+    {
+      "name": "wrong method → 405",
+      "ok": true
+    },
+    {
+      "name": "delete: wrong password → 401",
+      "ok": true
+    },
+    {
+      "name": "delete: ok",
+      "ok": true,
+      "extra": {
+        "ok": true,
+        "deleted": true
+      }
+    },
+    {
+      "name": "delete: sessions revoked",
+      "ok": true
+    },
+    {
+      "name": "delete: cannot sign in again",
+      "ok": true
+    },
+    {
+      "name": "delete: email can be registered again",
+      "ok": true,
+      "extra": {
+        "session_id": "ses_fWTzVzRsMohnlvvA",
+        "access_token": "a9WDAvfzUpvrt5dkrllyZcOyAnYR0hfBePnUEfnJH0U",
+        "access_expires_at": 1795111577151,
+        "refresh_token": "PrwcRQC1KWCA74Q1C6CRjsk8sIrAUcJ1DGre3NUzMTs",
+        "refresh_expires_at": 1800291977151,
+        "token_type": "Bearer",
+        "user": {
+          "id": "usr_61B6vmQJFTe93lJJ",
+          "email": "tester.pcsq90@example.com",
+          "email_verified": false,
+          "created_at": 1795107977128,
+          "has_password": true,
+          "providers": []
+        },
+        "profile": {
+          "display_name": null,
+          "locale": null,
+          "country": "US",
+          "units": null,
+          "marketing_consent": false,
+          "privacy_consent_at": 1795107977128,
+          "privacy_version": "1"
+        },
+        "plan": "free",
+        "subscription": null,
+        "entitlements": {
+          "advanced_forecast": false,
+          "ai_quota_daily": 0,
+          "heatmap": false,
+          "heatmap_forecast": false,
+          "navigation": "basic",
+          "ocean_data": "basic",
+          "offline_regions": 1,
+          "pattern_memory": false,
+          "species_tackle": false
+        },
+        "checked_at": 1795107977158
+      }
+    },
+    {
+      "name": "throttle: 11th+ attempt on one email → 429",
+      "ok": true,
+      "extra": {
+        "error": "too_many_requests"
+      }
+    },
+    {
+      "name": "throttle: 11th registration from one IP in an hour → 429",
+      "ok": true,
+      "extra": {
+        "error": "too_many_requests"
+      }
+    }
+  ],
+  "at": "2026-11-19T17:06:17.931Z"
+}

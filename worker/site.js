@@ -1,5 +1,8 @@
+import { handleApi } from './api/index.js';
+
 // Sea Scout website Worker (r14.15.44). Static files are served by Cloudflare directly (free, not counted);
 // this script only runs for paths that are not files: /api/crash (anonymous error reports → Worker logs).
+// r14.15.59: + /api/v1/* central membership API (worker/api/). Inert (503) until a D1 database is bound as DB.
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -17,6 +20,7 @@ export default {
       }
       return new Response(null, { status: 204, headers: cors });
     }
+    if (url.pathname.startsWith('/api/v1/')) return handleApi(request, env);
     return env.ASSETS.fetch(request);
   },
 };
