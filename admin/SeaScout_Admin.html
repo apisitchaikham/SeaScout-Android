@@ -101,7 +101,7 @@ const VIEWS={
    ${kpi(subs.premium||0,'Premium')}${kpi(subs.pro||0,'Pro')}${kpi((dev.android||0)+' / '+(dev.ios||0)+' / '+(dev.web||0),'อุปกรณ์ Android / iOS / เว็บ')}${kpi(o.affiliate_clicks_7d,'คลิก Affiliate 7 วัน')}
    ${kpi(o.security_24h.login_fail||0,'เข้าสู่ระบบผิด 24 ชม.',(o.security_24h.login_fail||0)>50?'bad':'')}${kpi(o.security_24h.token_reuse||0,'ตรวจพบ token ซ้ำ 24 ชม.',(o.security_24h.token_reuse||0)?'bad':'')}</div>
    <div class="card"><h2>สถานะระบบที่ต้องใช้บัญชีภายนอก</h2><table>
-   <tr><td>เข้าสู่ระบบด้วย Google</td><td>${yes(o.config.google_signin)}</td></tr><tr><td>Sign in with Apple</td><td>${yes(o.config.apple_signin)}</td></tr>
+   <tr><td>เข้าสู่ระบบด้วย Google</td><td>${yes(o.config.google_signin)}</td></tr><tr><td>Sign in with Apple</td><td>${yes(o.config.apple_signin)}</td></tr><tr><td>เข้าสู่ระบบด้วย Facebook</td><td>${yes(o.config.facebook_signin)}</td></tr>
    <tr><td>อีเมล (ยืนยัน/รีเซ็ตรหัส)</td><td>${yes(o.config.email)}</td></tr><tr><td>Google Play Billing</td><td>${yes(o.config.google_billing)} · RTDN ${yes(o.config.google_rtdn)}</td></tr>
    <tr><td>App Store (StoreKit)</td><td>${yes(o.config.apple_billing)}</td></tr></table><small class="mute">อัปเดต ${dt(o.at)} · วิธีตั้งค่า: docs/API_V1_TH.md</small></div>`;
  },
@@ -150,7 +150,7 @@ const VIEWS={
  async flags(v){
   const r=await api('GET','flags');
   v.innerHTML=`<div class="card"><h2>เปิด/ปิดฟังก์ชัน</h2><table><tr><th>flag</th><th>คำอธิบาย</th><th>เปิด</th><th>rollout %</th><th>แก้ล่าสุด</th><th></th></tr>${r.flags.map(f=>`<tr><td><code>${esc(f.key)}</code></td><td>${esc(f.description||'')}</td><td><input type="checkbox" data-k="${esc(f.key)}" ${f.enabled?'checked':''} ${can('admin')?'':'disabled'}></td><td><input type="number" min="0" max="100" value="${f.rollout_pct}" data-p="${esc(f.key)}" style="width:70px" ${can('admin')?'':'disabled'}></td><td>${dt(f.updated_at)} ${esc(f.updated_by||'')}</td><td>${can('admin')?`<button class="b" data-s="${esc(f.key)}">บันทึก</button>`:''}</td></tr>`).join('')}</table>
-   <p class="mute"><code>server_premium</code> = แอปเชื่อสิทธิ์จาก server (เปิดเมื่อ Billing พร้อม) · <code>tester_unlock</code> = รหัสผู้ทดสอบเดิม · <code>accounts</code> = หน้าจอบัญชีในแอป</p></div>`;
+   <p class="mute"><code>login_screen</code> = หน้าเข้าสู่ระบบหลังเปิดแอป · <code>login_required</code> = ซ่อนปุ่ม "ข้ามไปก่อน" (ไม่บังคับตอนไม่มีเน็ต · ระวังกฎ App Store 5.1.1) · <code>server_premium</code> = แอปเชื่อสิทธิ์จาก server (เปิดเมื่อ Billing พร้อม) · <code>tester_unlock</code> = รหัสผู้ทดสอบเดิม · <code>accounts</code> = หน้าจอบัญชีในแอป</p></div>`;
   v.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{const k=b.dataset.s,body={enabled:v.querySelector(`[data-k="${k}"]`).checked,rollout_pct:+v.querySelector(`[data-p="${k}"]`).value};
    if(['server_premium','accounts'].includes(k)){if(!ask(`เปลี่ยน ${k}? มีผลกับผู้ใช้ทุกคนทันที`))return;body.confirm=true;}
    try{const x=await api('PATCH','flags/'+k,body);toast(`บันทึกแล้ว (ย้อนกลับ: enabled=${x.rollback.enabled}, ${x.rollback.rollout_pct}%)`);show();}catch(e){toast(e.message,true);}});

@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 
 const [dir, port] = [process.argv[2], +process.argv[3] || 8790];
 const K = JSON.parse(fs.readFileSync(dir + '/keys.json', 'utf8'));
-const state = { emails: [], acks: [], google: {}, apple: {} };
+const state = { emails: [], acks: [], google: {}, apple: {}, fb: {} };
 const b64u = (b) => Buffer.from(b).toString('base64url');
 const unsigned = (o) => b64u(JSON.stringify({ alg: 'ES256' })) + '.' + b64u(JSON.stringify(o)) + '.sig';
 
@@ -42,6 +42,13 @@ http.createServer(async (req, res) => {
       signedTransactionInfo: unsigned({ originalTransactionId: id, productId: s.productId, expiresDate: s.expiresDate, originalPurchaseDate: Date.now() - 1000, appAccountToken: s.appAccountToken, bundleId: K.bundle }),
       signedRenewalInfo: unsigned({ autoRenewStatus: s.autoRenew ? 1 : 0 }) }] }] });
   }
+  if (u.pathname === '/graph/debug_token') { // Facebook Graph API
+    if (u.searchParams.get('access_token') !== K.fbAppId + '|' + K.fbSecret) return send(res, 400, { error: { message: 'bad app token' } });
+    const t = state.fb[u.searchParams.get('input_token')];
+    return send(res, 200, { data: t ? { is_valid: true, app_id: t.app_id, user_id: t.id } : { is_valid: false } });
+  }
+  if (u.pathname === '/graph/me') { const t = state.fb[u.searchParams.get('access_token')]; return t ? send(res, 200, { id: t.id, name: t.name, ...(t.email ? { email: t.email } : {}) }) : send(res, 400, {}); }
+  if (u.pathname === '/_fb' && req.method === 'POST') { const j = JSON.parse(body); state.fb[j.token] = j.user; return send(res, 200, {}); }
   if (u.pathname === '/emails') {
     if (req.headers.authorization !== 'Bearer re_test') return send(res, 401, {});
     state.emails.push(JSON.parse(body)); return send(res, 200, { id: 'em_' + state.emails.length });

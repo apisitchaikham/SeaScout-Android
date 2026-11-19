@@ -50,7 +50,7 @@ async function overview(req, env, a) {
   const clicks = await one('SELECT COUNT(*) AS n FROM affiliate_clicks WHERE at > ?', now - 7 * d);
   const pay = await one(`SELECT COUNT(*) AS n, SUM(result IN ('revoked','expired','canceled')) AS lost FROM payment_events WHERE received_at > ?`, now - 7 * d);
   const cfg = {
-    google_signin: !!env.GOOGLE_CLIENT_IDS, apple_signin: !!env.APPLE_CLIENT_IDS, email: !!(env.RESEND_API_KEY && env.EMAIL_FROM),
+    google_signin: !!env.GOOGLE_CLIENT_IDS, apple_signin: !!env.APPLE_CLIENT_IDS, facebook_signin: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET), email: !!(env.RESEND_API_KEY && env.EMAIL_FROM),
     google_billing: !!(env.GOOGLE_PLAY_PACKAGE && env.GOOGLE_SERVICE_ACCOUNT_JSON), google_rtdn: !!env.GOOGLE_RTDN_AUDIENCE,
     apple_billing: !!(env.APPLE_BUNDLE_ID && env.APPLE_ISSUER_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY),
   };

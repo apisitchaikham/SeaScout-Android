@@ -52,6 +52,36 @@ const gClaims = (o = {}) => ({ iss: 'https://accounts.google.com', aud: 'test-go
   ok('apple: links to existing account with same verified email', ap.s === 200 && ap.j.user.id === reg.j.user.id && ap.j.user.providers.includes('apple'), ap.j);
 }
 
+// ================= Facebook =================
+{
+  const pr = await call('GET', '/api/v1/auth/providers');
+  ok('providers: google/apple/facebook enabled with public ids only', pr.s === 200 && pr.j.google.enabled && pr.j.apple.enabled && pr.j.facebook.enabled && pr.j.facebook.app_id === K.fbAppId && !/secret/i.test(pr.t), pr.j);
+  const fEmail = `fb.${rnd}@example.com`;
+  await mock('/_fb', { token: 'EAAfbtoken-' + rnd + '-xxxxxxxxxxxx', user: { id: '9000' + rnd.length + Math.floor(Math.random() * 1e6), app_id: K.fbAppId, name: 'FB Tester', email: fEmail } });
+  const st = await mock('/_state'); const fbUser = st.fb['EAAfbtoken-' + rnd + '-xxxxxxxxxxxx'];
+  const r = await call('POST', '/api/v1/auth/facebook', { body: { access_token: 'EAAfbtoken-' + rnd + '-xxxxxxxxxxxx', privacy_consent: true, device: dev('fb-dev-000001') }, ip: ip() });
+  ok('facebook: sign-up 201 (email not marked verified)', r.s === 201 && r.j.user.providers.includes('facebook') && r.j.user.email_verified === false, r.j);
+  const r2 = await call('POST', '/api/v1/auth/facebook', { body: { access_token: 'EAAfbtoken-' + rnd + '-xxxxxxxxxxxx' }, ip: ip() });
+  ok('facebook: second sign-in same user', r2.s === 200 && r2.j.user.id === r.j.user.id, r2.j);
+  const bad = await call('POST', '/api/v1/auth/facebook', { body: { access_token: 'EAAunknown-token-xyz' }, ip: ip() });
+  ok('facebook: invalid token → 401', bad.s === 401, bad.j);
+  await mock('/_fb', { token: 'EAAotherapp-' + rnd + '-xxxxxxxxxxxx', user: { id: '777', app_id: '999999', name: 'X', email: 'x@example.com' } });
+  const other = await call('POST', '/api/v1/auth/facebook', { body: { access_token: 'EAAotherapp-' + rnd + '-xxxxxxxxxxxx' }, ip: ip() });
+  ok('facebook: token from another app → 401', other.s === 401, other.j);
+  const exEmail = `exists.${rnd}@example.com`;
+  await call('POST', '/api/v1/auth/register', { body: { email: exEmail, password: 'exists-password-1', privacy_consent: true }, ip: ip() });
+  await mock('/_fb', { token: 'EAAtakeover-' + rnd + '-xxxxxxxxxxxx', user: { id: '555' + rnd.length, app_id: K.fbAppId, name: 'Y', email: exEmail } });
+  const take = await call('POST', '/api/v1/auth/facebook', { body: { access_token: 'EAAtakeover-' + rnd + '-xxxxxxxxxxxx', privacy_consent: true }, ip: ip() });
+  ok('facebook: email of an existing account is NOT auto-linked → 409', take.s === 409 && take.j.error === 'account_exists_sign_in_first', take.j);
+  await mock('/_fb', { token: 'EAAnoemail-' + rnd + '-xxxxxxxxxxxx', user: { id: '444' + rnd.length, app_id: K.fbAppId, name: 'Z' } });
+  const ne = await call('POST', '/api/v1/auth/facebook', { body: { access_token: 'EAAnoemail-' + rnd + '-xxxxxxxxxxxx', privacy_consent: true }, ip: ip() });
+  ok('facebook: no email permission → 400 email_required', ne.s === 400 && ne.j.error === 'email_required', ne.j);
+  const lim = await call('POST', '/api/v1/auth/facebook', { body: { id_token: idToken({ iss: 'https://www.facebook.com', aud: K.fbAppId, sub: String(fbUser.id), email: fEmail, iat: now(), exp: now() + 600 }) }, ip: ip() });
+  ok('facebook: iOS Limited Login ID token → same user', lim.s === 200 && lim.j.user.id === r.j.user.id, lim.j);
+  const limBad = await call('POST', '/api/v1/auth/facebook', { body: { id_token: idToken({ iss: 'https://www.facebook.com', aud: 'another-app', sub: '1', iat: now(), exp: now() + 600 }) }, ip: ip() });
+  ok('facebook: Limited Login wrong audience → 401', limBad.s === 401, limBad.j);
+}
+
 // ================= Email codes =================
 const eEmail = `mail.${rnd}@example.com`, ePw = 'first-password-xyz';
 let U; // { user, tokens }

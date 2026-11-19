@@ -4,7 +4,7 @@
 import { ApiError, VERSION, LOCALES, PLATFORMS, json, readJson, corsHeaders, cleanEmail, checkPassword, str,
   hashPassword, safeEqual, newId, clientIp, country, sha256 } from './util.js';
 import { audit, rateLimit, upsertDevice, createSession, authenticate, rotateRefresh, entitlementsFor } from './store.js';
-import { socialSignIn } from './social.js';
+import { socialSignIn, providers } from './social.js';
 import { forgot, reset, verifyRequest, verifyConfirm } from './email.js';
 import { googleVerify, googleNotify, appleVerify, appleNotify, billingTokens } from './billing.js';
 import { items as commerceItems, go as commerceGo } from './commerce.js';
@@ -184,6 +184,8 @@ const ROUTES = [
   ['POST', /^\/api\/v1\/auth\/logout$/, logout],
   ['POST', /^\/api\/v1\/auth\/google$/, socialSignIn('google')],
   ['POST', /^\/api\/v1\/auth\/apple$/, socialSignIn('apple')],
+  ['POST', /^\/api\/v1\/auth\/facebook$/, socialSignIn('facebook')],
+  ['GET', /^\/api\/v1\/auth\/providers$/, providers],
   ['POST', /^\/api\/v1\/auth\/password\/forgot$/, forgot],
   ['POST', /^\/api\/v1\/auth\/password\/reset$/, reset],
   ['POST', /^\/api\/v1\/auth\/email\/verify\/request$/, verifyRequest],

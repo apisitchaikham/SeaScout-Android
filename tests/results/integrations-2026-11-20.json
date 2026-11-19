@@ -1,5 +1,5 @@
 {
-  "pass": 63,
+  "pass": 72,
   "fail": 0,
   "results": [
     {
@@ -32,6 +32,42 @@
     },
     {
       "name": "apple: links to existing account with same verified email",
+      "ok": true
+    },
+    {
+      "name": "providers: google/apple/facebook enabled with public ids only",
+      "ok": true
+    },
+    {
+      "name": "facebook: sign-up 201 (email not marked verified)",
+      "ok": true
+    },
+    {
+      "name": "facebook: second sign-in same user",
+      "ok": true
+    },
+    {
+      "name": "facebook: invalid token → 401",
+      "ok": true
+    },
+    {
+      "name": "facebook: token from another app → 401",
+      "ok": true
+    },
+    {
+      "name": "facebook: email of an existing account is NOT auto-linked → 409",
+      "ok": true
+    },
+    {
+      "name": "facebook: no email permission → 400 email_required",
+      "ok": true
+    },
+    {
+      "name": "facebook: iOS Limited Login ID token → same user",
+      "ok": true
+    },
+    {
+      "name": "facebook: Limited Login wrong audience → 401",
       "ok": true
     },
     {
@@ -255,5 +291,5 @@
       "ok": true
     }
   ],
-  "at": "2026-11-19T17:45:14.679Z"
+  "at": "2026-11-19T18:17:11.082Z"
 }

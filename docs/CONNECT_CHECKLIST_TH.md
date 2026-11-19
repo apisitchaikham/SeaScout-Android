@@ -1,4 +1,4 @@
-# Sea Scout — สมัครเสร็จแล้วเชื่อมทีเดียว (r14.15.60)
+# Sea Scout — สมัครเสร็จแล้วเชื่อมทีเดียว (r14.15.61)
 
 โค้ดฝั่ง server เขียนเสร็จและทดสอบกับระบบจำลองแล้ว (Google, Apple, Resend)
 แต่ละส่วนเปิดเองเมื่อใส่ค่าครบ ถ้ายังไม่ใส่ endpoint จะตอบ `503 …_not_configured`
@@ -40,6 +40,21 @@ Apple Developer → Identifiers → App ID `app.seascout.marine` → เปิ�
 |---|---|
 | `APPLE_CLIENT_IDS` | `app.seascout.marine` (ถ้ามี Services ID เพิ่ม ให้คั่นด้วย `,`) |
 
+## 3b. เข้าสู่ระบบด้วย Facebook
+Meta for Developers → Create App (Consumer) → เพิ่ม Facebook Login
+- Android: package `app.seascout.marine` + key hash
+- iOS: bundle `app.seascout.marine`
+- เปิด permission `email`
+- เมื่อขายจริงต้องผ่าน App Review ของ Meta
+
+| Secret | ค่า |
+|---|---|
+| `FACEBOOK_APP_ID` | App ID |
+| `FACEBOOK_APP_SECRET` | App Secret (Settings → Basic) |
+| `GOOGLE_WEB_CLIENT_ID` | (Google) Web client id ที่แอปใช้เริ่มปุ่ม Google |
+
+หมายเหตุ: อีเมลจาก Facebook จะไม่ผูกกับบัญชีอีเมลเดิมให้อัตโนมัติ (กันการยึดบัญชี) ถ้าอีเมลนั้นมีบัญชีอยู่แล้ว ผู้ใช้ต้องเข้าสู่ระบบด้วยอีเมลก่อน
+
 ## 4. Google Play Billing
 1. Play Console:
    - สร้างแอป `app.seascout.marine`
@@ -80,6 +95,22 @@ Apple Developer → Identifiers → App ID `app.seascout.marine` → เปิ�
 แอปจะใช้สิทธิ์จากบัญชีแทนการปลดล็อกในเครื่อง ส่วน `tester_unlock` จะเก็บไว้หรือปิดก็ได้
 
 ---
+
+## หน้าเข้าสู่ระบบหลังเปิดแอป (r14.15.61)
+- แสดงหลังหน้าโหลด: Google, Facebook, Apple (เฉพาะ iPhone/iPad), ใช้อีเมล, ข้ามไปก่อน
+- ไม่ขึ้นเมื่อไม่มีอินเทอร์เน็ต (ระบบนำทางต้องใช้ได้เสมอ)
+- กด "ข้ามไปก่อน" แล้วจะไม่ถามซ้ำ 3 วัน
+- เปิดหน้านี้เองได้จากปุ่ม 🔐 ในแผงบัญชี
+- Admin → เปิด/ปิดฟังก์ชัน:
+  - `login_screen` = แสดงหน้านี้ / ไม่แสดง
+  - `login_required` = ซ่อนปุ่มข้าม
+- กฎที่ต้องรู้:
+  - App Store 4.8: มี Google/Facebook ต้องมี Apple ด้วย (ทำไว้แล้ว)
+  - App Store 5.1.1: ไม่ควรบังคับสมัครถ้าฟีเจอร์หลักไม่ต้องใช้บัญชี → แนะนำให้ `login_required` ปิดไว้ตอนส่งรีวิว
+- ปุ่ม Google/Facebook บนเว็บใช้ SDK ของผู้ให้บริการ (โหลดเมื่อกด)
+- ในแอปมือถือใช้ plugin `@capgo/capacitor-social-login` (Google + Facebook + Apple ใน plugin เดียว)
+  - ติดตั้งหลังได้ App ID: `npm i @capgo/capacitor-social-login` → `npx cap sync` → ใส่ App ID ใน `strings.xml` / `Info.plist` ตามคู่มือ plugin
+  - โค้ดในแอปเรียก plugin นี้ไว้แล้ว ถ้ายังไม่ได้ติดตั้ง ปุ่มจะแจ้งให้ใช้อีเมลไปก่อน
 
 ## ฝั่งแอปที่ยังต้องเพิ่มหลังได้ค่าข้างบน
 ต้องมีไฟล์ตั้งค่าจริงก่อนถึงจะติดตั้งและทดสอบได้
