@@ -1,10 +1,14 @@
 // Cloudflare Workers Builds: the Sea Scout website.
 // Build command:  bash tools/build_site.sh     Deploy command: npx wrangler deploy
-// Static files in ./site are served directly; worker/site.js only handles /api/crash (anonymous error reports).
+// Static files in ./site are served directly; worker/site.js handles /api/crash (anonymous error reports)
+// and /api/v1/* (central membership API, worker/api/) backed by the D1 database below (r14.15.59).
 {
   "name": "seascout",
   "compatibility_date": "2026-11-01",
   "main": "worker/site.js",
   "assets": { "directory": "./site", "binding": "ASSETS" },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "seascout-db", "database_id": "750cb03b-b883-481c-941a-2acfd322fe73", "migrations_dir": "migrations" }
+  ]
 }
