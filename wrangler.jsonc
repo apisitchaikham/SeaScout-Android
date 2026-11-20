@@ -8,11 +8,11 @@
   "main": "worker/site.js",
   "assets": { "directory": "./site", "binding": "ASSETS" },
   "observability": { "enabled": true },
+  // Facebook Login (App ID 986357267420012) is switched off until Meta business verification: add "FACEBOOK_APP_ID" back here to turn it on.
   // Public ids only (safe in git). Secrets (GOOGLE_WEB_CLIENT_SECRET, FACEBOOK_APP_SECRET, …) live in the Cloudflare dashboard.
   "vars": {
     "GOOGLE_WEB_CLIENT_ID": "491667475897-vqc2k8knoj6i2uo86fhe97vhf0le9lsl.apps.googleusercontent.com",
-    "GOOGLE_CLIENT_IDS": "491667475897-vqc2k8knoj6i2uo86fhe97vhf0le9lsl.apps.googleusercontent.com",
-    "FACEBOOK_APP_ID": "986357267420012"
+    "GOOGLE_CLIENT_IDS": "491667475897-vqc2k8knoj6i2uo86fhe97vhf0le9lsl.apps.googleusercontent.com"
   },
   "keep_vars": true,
   "d1_databases": [

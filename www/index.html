@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.65-logout-2026-11-20">
+<meta name="sea-scout-build" content="standalone-r14.15.66-providers-2026-11-20">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.65 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.66 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.65</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.66</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.65 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.66 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.65-logout-2026-11-20
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.65-logout-2026-11-20';
+// SEA_SCOUT_BUILD=standalone-r14.15.66-providers-2026-11-20
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.66-providers-2026-11-20';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -7291,7 +7291,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.65';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.66';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -7406,7 +7406,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
     <div class="row"><input type="email" id="saEmail" autocomplete="email" placeholder="อีเมล" inputmode="email"></div>
     <div class="row"><input type="password" id="saPw" autocomplete="${mode==='login'?'current-password':'new-password'}" placeholder="${mode==='login'?'รหัสผ่าน':'ตั้งรหัสผ่าน (อย่างน้อย 10 ตัวอักษร)'}"></div>
     ${mode==='register'?`<label class="row"><input type="checkbox" id="saConsent"> ยอมรับนโยบายความเป็นส่วนตัวของ Sea Scout</label><label class="row"><input type="checkbox" id="saMkt"> รับข่าวสารและโปรโมชัน (ไม่บังคับ)</label>`:''}
-    <div class="row"><button type="button" id="saSocial">🔐 เข้าสู่ระบบด้วย Google / Facebook${ios()?' / Apple':''}</button></div>
+    <div class="row"><button type="button" id="saSocial">🔐 เข้าสู่ระบบด้วย Google${pOn('facebook')?' / Facebook':''}${ios()?' / Apple':''}</button></div>
     <div class="row"><button type="button" class="pri" id="saGo">${mode==='login'?'เข้าสู่ระบบ':'สมัครสมาชิก'}</button><button type="button" id="saMode">${mode==='login'?'ยังไม่มีบัญชี · สมัคร':'มีบัญชีแล้ว · เข้าสู่ระบบ'}</button></div>
     <div class="msg${msgErr?' err':''}">${esc(msg)}</div>`;
    b.querySelector('#saSocial').onclick=()=>window.seaShowLogin&&seaShowLogin();
@@ -7517,7 +7517,10 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   A.early=true;if(!gateWanted())return;
   if(navigator.onLine===false)netGate();else showGate();
  }
- const PV=()=>A.providers||{};
+ // r14.15.66: a sign-in button shows only when the server says that provider is switched on (cached for the instant screen at launch)
+ const PCKEY='seaProvidersV1';
+ const PV=()=>A.providers||(()=>{try{return JSON.parse(localStorage.getItem(PCKEY)||'null')||{};}catch(_){return {};}})();
+ const pOn=p=>{const v=PV()[p];return !!(v&&v.enabled);};
  const GI={google:'<span class="gI" style="color:#4285f4">G</span>',facebook:'<span class="gI">f</span>',apple:'<span class="gI"></span>'};
  function showGate(view){
   if(!gateWanted()&&view!=='email'){closeGate();return;}
@@ -7547,7 +7550,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   }else{
    g.innerHTML=`<div class="gBox"><div class="gLogo">🌊</div><h1>Sea Scout</h1><p>เข้าสู่ระบบเพื่อใช้บัญชีเดียวกันทุกเครื่อง<br>Android · iPhone · iPad</p>
     <button type="button" class="gG" data-p="google">${GI.google} ดำเนินการต่อด้วย Google</button>
-    <button type="button" class="gF" data-p="facebook">${GI.facebook} ดำเนินการต่อด้วย Facebook</button>
+    ${pOn('facebook')?`<button type="button" class="gF" data-p="facebook">${GI.facebook} ดำเนินการต่อด้วย Facebook</button>`:''}
     ${ios()?`<button type="button" class="gA" data-p="apple">${GI.apple} ดำเนินการต่อด้วย Apple</button>`:''}
     <button type="button" class="gE" id="gEmail">✉️ ใช้อีเมล</button>
     ${req?'':'<button type="button" class="gSkip" id="gSkip">ข้ามไปก่อน</button>'}
@@ -7654,7 +7657,8 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   A.ready=true;render();
   if(A.session)loadMe();
   maybeGate();
-  try{A.providers=await http('GET','auth/providers');}catch(_){A.providers=null;}
+  try{A.providers=await http('GET','auth/providers');try{localStorage.setItem(PCKEY,JSON.stringify(A.providers));}catch(_){}}catch(_){A.providers=null;}
+  if(!A.session)maybeGate();
   try{const s=await store.get();if(s){s.flags=A.flags;await store.set(s);}}catch(_){}
  }
  window.seaAccountStart=start;
