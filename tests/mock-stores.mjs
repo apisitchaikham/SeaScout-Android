@@ -21,6 +21,23 @@ const send = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'appli
 http.createServer(async (req, res) => {
   let body = ''; for await (const c of req) body += c;
   const u = new URL(req.url, 'http://x');
+  // ---- affiliate networks (r14.15.68): signatures checked exactly as the Worker makes them ----
+  if (u.pathname === '/_shop' && req.method === 'POST') { state.shop = JSON.parse(body); return send(res, 200, {}); }
+  if (u.pathname === '/shopee/graphql') {
+    const m = /^SHA256 Credential=([^,]+), Timestamp=(\d+), Signature=([0-9a-f]{64})$/.exec(req.headers.authorization || '');
+    const ok = m && m[1] === 'sp-app-1' && crypto.createHash('sha256').update(m[1] + m[2] + body + 'sp-secret').digest('hex') === m[3];
+    if (!ok) return send(res, 200, { errors: [{ message: 'Invalid Signature' }] });
+    state.shopCalls = (state.shopCalls || 0) + 1;
+    const kw = (/keyword:"([^"]*)"/.exec(JSON.parse(body).query) || [])[1] || '';
+    return send(res, 200, { data: { productOfferV2: { nodes: ((state.shop || {}).shopee || []).map((n) => ({ ...n, productName: n.productName + ' ' + kw })) } } });
+  }
+  if (u.pathname === '/aliexpress/sync') {
+    const f = Object.fromEntries(new URLSearchParams(body)); const sign = f.sign; delete f.sign;
+    const base = Object.keys(f).sort().map((k) => k + f[k]).join('');
+    if (crypto.createHmac('sha256', 'ae-secret').update(base).digest('hex').toUpperCase() !== sign)
+      return send(res, 200, { aliexpress_affiliate_product_query_response: { resp_result: { resp_code: 401, resp_msg: 'bad sign' } } });
+    return send(res, 200, { aliexpress_affiliate_product_query_response: { resp_result: { resp_code: 200, result: { products: { product: (state.shop || {}).aliexpress || [] } } } } });
+  }
   if (u.pathname === '/jwks') return send(res, 200, { keys: [K.idJwk] });
   // ---- browser sign-in (r14.15.64): Google authorize + code exchange, Facebook dialog + code exchange ----
   if (u.pathname === '/gauth' || u.pathname === '/fbdialog') {

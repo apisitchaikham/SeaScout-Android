@@ -15,6 +15,8 @@
     "GOOGLE_CLIENT_IDS": "491667475897-vqc2k8knoj6i2uo86fhe97vhf0le9lsl.apps.googleusercontent.com"
   },
   "keep_vars": true,
+  // r14.15.68: one cron (free plan allows 5) — fills the shop from affiliate APIs, one search per run
+  "triggers": { "crons": ["*/30 * * * *"] },
   "d1_databases": [
     { "binding": "DB", "database_name": "seascout-db", "database_id": "750cb03b-b883-481c-941a-2acfd322fe73", "migrations_dir": "migrations" }
   ]

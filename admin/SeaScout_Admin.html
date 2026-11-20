@@ -80,7 +80,7 @@ $('#goBtn').onclick=async()=>{
 $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click();};
 function logout(silent){if(!silent&&S.token)api('POST','logout',{}).catch(()=>{});S.token='';sessionStorage.removeItem('ssAdm');$('#login').classList.remove('hide');$('#nav').classList.add('hide');$('#outBtn').classList.add('hide');$('#view').innerHTML='';$('#who').textContent='';}
 $('#outBtn').onclick=()=>logout(false);
-const TABS=[['overview','ภาพรวม'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
+const TABS=[['overview','ภาพรวม'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
 function start(){
  $('#login').classList.add('hide');$('#nav').classList.remove('hide');$('#outBtn').classList.remove('hide');$('#who').textContent=S.email+' · '+S.role;
  $('#nav').innerHTML=TABS.filter(t=>t[0]!=='admins'||can('owner')).map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
@@ -88,7 +88,7 @@ function start(){
 }
 async function show(){
  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
- const v=$('#view');v.innerHTML='<div class="card mute">กำลังโหลด…</div>';
+ const v=$('#view');v.onclick=null;v.innerHTML='<div class="card mute">กำลังโหลด…</div>';
  try{await VIEWS[S.tab](v);}catch(e){v.innerHTML=`<div class="card bad">${esc(e.message)}</div>`;}
 }
 const kpi=(n,l,c)=>`<div class="card kpi"><b class="${c||''}">${esc(n)}</b><span>${esc(l)}</span></div>`;
@@ -163,6 +163,23 @@ const VIEWS={
    ${can('admin')?`<div class="row"><select id="ss"><option>google</option><option>apple</option></select><input id="sid" placeholder="product id เช่น seascout_premium_monthly" style="flex:1"><select id="sp"><option>premium</option><option>pro</option></select><input id="sper" placeholder="P1M / P1Y" style="width:80px"><button class="b" id="sb">เพิ่ม/แก้</button></div>`:''}</div>`;
   const ps=$('#ps');if(ps)ps.onclick=async()=>{let n=0;for(const i of v.querySelectorAll('[data-pk]')){const[p,k]=i.dataset.pk.split('|'),old=val(p,k)||'';if(i.value===old)continue;let x;try{x=JSON.parse(i.value);}catch(_){x=i.value;}await api('PUT',`plans/${p}/entitlements/${k}`,{value:x});n++;}toast('บันทึก '+n+' ค่า');show();};
   const sb=$('#sb');if(sb)sb.onclick=async()=>{try{await api('PUT','store-products',{store:$('#ss').value,product_id:$('#sid').value.trim(),plan_id:$('#sp').value,period:$('#sper').value.trim()||undefined});toast('บันทึกแล้ว');show();}catch(e){toast(e.message,true);}};
+ },
+ async autoshop(v){
+  const r=await api('GET','shop');const net=n=>r.networks[n]?'<span class="ok">เชื่อมแล้ว</span>':'<span class="bad">ยังไม่ใส่คีย์</span>';
+  const st=p=>p.rating==null?'-':'⭐'+(Math.round(p.rating/p.rating_scale*50)/10).toFixed(1);
+  const sold=n=>n==null?'-':n>=1000?(Math.round(n/100)/10)+'k':String(n);
+  v.innerHTML=`<div class="card"><h2>สินค้าอัตโนมัติ</h2><p class="mute">ระบบค้นหาสินค้าเองจาก API ของเครือข่าย Affiliate ทุก 30 นาที (ครั้งละ 1 คำค้น) · เรียง: รีวิวสูงสุดก่อน แล้วยอดขายมาก→น้อย · คัดเฉพาะ ≥4.5 ดาว และขายแล้ว ≥30 ชิ้น · ลิงก์เป็นลิงก์ Affiliate จากเครือข่ายเอง ไม่ต้องใส่เอง</p>
+   <p>Shopee: ${net('shopee')} · AliExpress: ${net('aliexpress')}</p>
+   ${can('admin')?'<button class="b p" id="srun">ดึงตอนนี้ (1 คำค้น)</button>':''}</div>
+   <div class="card"><h2>คำค้น</h2><table><tr><th>เครือข่าย</th><th>คำค้น</th><th>แสดงกับ</th><th>ล่าสุด</th><th>ได้</th><th></th></tr>${r.queries.map(q=>`<tr><td>${esc(q.source)}</td><td><input data-qk="${esc(q.id)}" value="${esc(q.keyword)}"></td><td><input data-qt="${esc(q.id)}" value="${esc(JSON.parse(q.tags).join(','))}"></td><td>${q.last_run?new Date(q.last_run).toLocaleString('th-TH'):'-'} ${q.last_status&&q.last_status!=='ok'?'<span class="bad">'+esc(q.last_status)+'</span>':''}</td><td>${q.last_count??'-'}</td><td>${can('admin')?`<button class="b" data-qs="${esc(q.id)}">บันทึก</button> <button class="b" data-qr="${esc(q.id)}">ดึง</button>`:''}</td></tr>`).join('')}</table></div>
+   <div class="card"><h2>สินค้าที่ระบบหามา</h2><table><tr><th>#</th><th>สินค้า</th><th>รีวิว</th><th>ขายแล้ว</th><th>คำค้น</th><th>สถานะ</th><th></th></tr>${r.products.map(p=>`<tr><td>${p.sort+1}</td><td>${esc(p.title)}</td><td>${st(p)}</td><td>${sold(p.sales)}</td><td>${esc(p.query_id||'')}</td><td>${p.active?'<span class="ok">แสดง</span>':p.off_reason==='admin'?'<span class="bad">บล็อก</span>':'<span class="mute">หลุดอันดับ</span>'}</td><td>${can('admin')?(p.off_reason==='admin'?`<button class="b" data-ub="${p.id}">เลิกบล็อก</button>`:p.active?`<button class="b" data-bl="${p.id}">บล็อก</button>`:''):''}</td></tr>`).join('')||'<tr><td class="mute" colspan="7">ยังไม่มี — ใส่คีย์ API แล้วเปิด flag auto_shop</td></tr>'}</table></div>`;
+  const go=async(f)=>{try{const x=await f();if(x&&x.skipped)toast('ข้าม: '+x.skipped,true);else if(x&&x.error)toast(x.error,true);else toast('เรียบร้อย');show();}catch(e){toast(e.message,true);}};
+  const sr=$('#srun');if(sr)sr.onclick=()=>go(()=>api('POST','shop/run',{}));
+  v.onclick=e=>{const d=e.target.dataset;
+   if(d.qs)go(()=>api('PUT','shop/queries/'+d.qs,{keyword:v.querySelector(`[data-qk="${d.qs}"]`).value.trim(),tags:v.querySelector(`[data-qt="${d.qs}"]`).value.split(',').map(x=>x.trim()).filter(Boolean)}));
+   if(d.qr)go(()=>api('POST','shop/run',{query_id:d.qr}));
+   if(d.bl)go(()=>api('POST','shop/products/'+d.bl+'/block',{}));
+   if(d.ub)go(()=>api('POST','shop/products/'+d.ub+'/unblock',{}));};
  },
  async commerce(v){
   const r=await api('GET','commerce');const clicks=Object.fromEntries(r.clicks_30d.map(c=>[c.offer_id,c.n]));

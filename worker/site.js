@@ -1,4 +1,5 @@
 import { handleApi } from './api/index.js';
+import { autoShopTick } from './api/autoshop.js';
 
 // Sea Scout website Worker (r14.15.44). Static files are served by Cloudflare directly (free, not counted);
 // this script only runs for paths that are not files: /api/crash (anonymous error reports → Worker logs).
@@ -22,5 +23,10 @@ export default {
     }
     if (url.pathname.startsWith('/api/v1/')) return handleApi(request, env);
     return env.ASSETS.fetch(request);
+  },
+  // r14.15.68: every 30 min, refresh ONE shop search from the affiliate networks (inert while flag auto_shop = 0 or no keys)
+  async scheduled(event, env, ctx) {
+    if (!env.DB) return;
+    ctx.waitUntil(autoShopTick(env).then((r) => console.log(JSON.stringify({ seascout: 'auto_shop', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'auto_shop', error: String(e) }))));
   },
 };

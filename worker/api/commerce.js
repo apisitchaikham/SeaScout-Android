@@ -47,7 +47,7 @@ export async function catalog(req, env) {
   const key = cc + '|' + (lang || ''), hit = CAT_CACHE.get(key);
   if (hit && Date.now() - hit.at < 300e3) return json(req, 200, hit.body, { 'Cache-Control': 'public, max-age=300' });
   const { results: prods } = await db.prepare(
-    `SELECT id, title, title_i18n, description, desc_i18n, brand, tags, sort FROM products WHERE active = 1 ORDER BY sort, updated_at DESC LIMIT 500`).all();
+    `SELECT id, title, title_i18n, description, desc_i18n, brand, tags, sort, source, rating, rating_scale, sales FROM products WHERE active = 1 ORDER BY sort, updated_at DESC LIMIT 500`).all();
   let items = [];
   if (prods.length) {
     const { results: imgs } = await db.prepare(`SELECT i.product_id, i.url, i.alt FROM product_images i JOIN products p ON p.id = i.product_id WHERE p.active = 1 ORDER BY i.sort`).all();
@@ -56,7 +56,8 @@ export async function catalog(req, env) {
        WHERE o.active = 1 AND m.active = 1 AND (o.country = ? OR o.country = '*') ORDER BY (o.country = '*'), o.sort`).bind(cc).all();
     const base = new URL('/api/v1/go/', req.url).href;
     items = prods.map((p) => ({ id: p.id, title: pick(p.title_i18n, lang, p.title), desc: pick(p.desc_i18n, lang, p.description), brand: p.brand,
-      tags: JSON.parse(p.tags || '[]'), sort: p.sort,
+      tags: JSON.parse(p.tags || '[]'), sort: p.sort, source: p.source || 'manual',
+      stars: p.rating == null || !p.rating_scale ? null : Math.round((p.rating / p.rating_scale) * 50) / 10, sales: p.sales == null ? null : p.sales,
       images: imgs.filter((i) => i.product_id === p.id).map((i) => ({ url: i.url, alt: i.alt })),
       offers: offs.filter((o) => o.product_id === p.id).map((o) => ({ id: o.id, merchant: o.merchant, kind: o.kind, country: o.country, currency: o.currency, price: o.price, go: base + o.id })) }))
       .filter((p) => p.offers.length);

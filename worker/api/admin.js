@@ -3,6 +3,7 @@
 // (2 h), stored hashed, and every change is written to audit_logs. Nothing secret is ever returned.
 import { ApiError, json, readJson, newId, randomToken, sha256, hashPassword, safeEqual, cleanEmail, clientIp, country, str } from './util.js';
 import { audit, rateLimit } from './store.js';
+import { autoShopTick, configured as shopConfigured } from './autoshop.js';
 
 const ROLE = { viewer: 0, support: 1, admin: 2, owner: 3 };
 const ADMIN_TTL = 2 * 3600e3;
@@ -245,6 +246,38 @@ async function deleteRow(req, env, a, table, id) {
   return json(req, 200, { ok: true });
 }
 
+// ---------- automatic shop (r14.15.68): admins never type links; they only see, block/unblock, or edit search words ----------
+async function shopList(req, env, a) {
+  need(a, 'admin'); const db = env.DB;
+  const [q, p] = await Promise.all([db.prepare('SELECT * FROM shop_queries ORDER BY source, id').all(),
+    db.prepare(`SELECT id, title, source, ext_id, query_id, rating, rating_scale, sales, active, off_reason, sort, refreshed_at FROM products WHERE source != 'manual' ORDER BY query_id, active DESC, sort`).all()]);
+  return json(req, 200, { networks: { shopee: shopConfigured.shopee(env), aliexpress: shopConfigured.aliexpress(env) }, queries: q.results, products: p.results });
+}
+async function shopBlock(req, env, a, id, block) {
+  need(a, 'admin'); const now = Date.now();
+  const r = await env.DB.prepare(block ? `UPDATE products SET active = 0, off_reason = 'admin', updated_at = ? WHERE id = ? AND source != 'manual'`
+    : `UPDATE products SET active = 1, off_reason = NULL, updated_at = ? WHERE id = ? AND source != 'manual' AND off_reason = 'admin'`).bind(now, id).run();
+  if (!r.meta || !r.meta.changes) throw new ApiError(404, 'not_found');
+  await audit(env.DB, 'admin', a.id, block ? 'shop_block' : 'shop_unblock', id, null, country(req));
+  return json(req, 200, { ok: true });
+}
+async function shopQuery(req, env, a, id) {
+  need(a, 'admin'); const b = await readJson(req);
+  const kw = str(b.keyword, 80); if (!kw) throw new ApiError(400, 'keyword_required');
+  const tags = (Array.isArray(b.tags) ? b.tags : []).map(String).filter((t) => /^[A-Za-z]{2,20}$/.test(t)).slice(0, 10);
+  if (!tags.length) throw new ApiError(400, 'tags_required');
+  const r = await env.DB.prepare('UPDATE shop_queries SET keyword = ?, tags = ?, active = ?, last_run = 0 WHERE id = ?').bind(kw, JSON.stringify(tags), b.active === false ? 0 : 1, id).run();
+  if (!r.meta || !r.meta.changes) throw new ApiError(404, 'not_found');
+  await audit(env.DB, 'admin', a.id, 'shop_query', id, { keyword: kw, tags }, country(req));
+  return json(req, 200, { ok: true });
+}
+async function shopRun(req, env, a) {
+  need(a, 'admin'); const b = await readJson(req);
+  const out = await autoShopTick(env, { force: true, queryId: b.query_id ? String(b.query_id).slice(0, 40) : null });
+  await audit(env.DB, 'admin', a.id, 'shop_run', b.query_id || '', out, country(req));
+  return json(req, 200, out);
+}
+
 // ---------- admin users (owner) ----------
 async function adminsList(req, env, a) { need(a, 'owner'); return json(req, 200, { admins: (await env.DB.prepare('SELECT id, email, role, disabled, created_at FROM admin_users ORDER BY created_at').all()).results }); }
 async function adminUpsert(req, env, a) {
@@ -275,6 +308,8 @@ const R = [
   ['POST', /^products$/, (q, e, a) => upsertProduct(q, e, a, null)], ['PUT', /^products\/(prd_[\w-]{16})$/, upsertProduct], ['DELETE', /^products\/(prd_[\w-]{16})$/, (q, e, a, id) => deleteRow(q, e, a, 'products', id)],
   ['POST', /^merchants$/, (q, e, a) => upsertMerchant(q, e, a, null)], ['PUT', /^merchants\/(mer_[\w-]{16})$/, upsertMerchant], ['DELETE', /^merchants\/(mer_[\w-]{16})$/, (q, e, a, id) => deleteRow(q, e, a, 'merchants', id)],
   ['POST', /^offers$/, (q, e, a) => upsertOffer(q, e, a, null)], ['PUT', /^offers\/(off_[\w-]{16})$/, upsertOffer], ['DELETE', /^offers\/(off_[\w-]{16})$/, (q, e, a, id) => deleteRow(q, e, a, 'offers', id)],
+  ['GET', /^shop$/, shopList], ['POST', /^shop\/run$/, shopRun], ['PUT', /^shop\/queries\/(q_[a-z_]{2,30})$/, shopQuery],
+  ['POST', /^shop\/products\/(prd_[\w-]{16})\/block$/, (q, e, a, id) => shopBlock(q, e, a, id, true)], ['POST', /^shop\/products\/(prd_[\w-]{16})\/unblock$/, (q, e, a, id) => shopBlock(q, e, a, id, false)],
   ['GET', /^admins$/, adminsList], ['PUT', /^admins$/, adminUpsert], ['POST', /^logout$/, logout],
 ];
 export async function handleAdmin(req, env, sub) {
