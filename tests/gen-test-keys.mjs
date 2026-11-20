@@ -20,7 +20,7 @@ fs.writeFileSync(devvars, [
   `RESEND_API_KEY=${q('re_test')}`, `RESEND_API_URL=${q(mock + '/emails')}`, `EMAIL_FROM=${q('Sea Scout <no-reply@example.com>')}`,
   `GOOGLE_PLAY_PACKAGE=${q(bundle)}`, `GOOGLE_SERVICE_ACCOUNT_JSON='${saJson}'`, `GOOGLE_API_BASE=${q(mock)}`, `GOOGLE_TOKEN_URL=${q(mock + '/token')}`,
   `GOOGLE_RTDN_AUDIENCE=${q('https://seascout.test/rtdn')}`, `GOOGLE_RTDN_SA_EMAIL=${q('pubsub@test.iam.gserviceaccount.com')}`,
-  `FACEBOOK_APP_ID=${q(fbAppId)}`, `FACEBOOK_APP_SECRET=${q(fbSecret)}`, `FACEBOOK_GRAPH_URL=${q(mock + '/graph')}`, `FACEBOOK_JWKS_URL=${q(mock + '/jwks')}`, `GOOGLE_WEB_CLIENT_ID=${q('test-google-client')}`,
+  `FACEBOOK_APP_ID=${q(fbAppId)}`, `FACEBOOK_APP_SECRET=${q(fbSecret)}`, `FACEBOOK_GRAPH_URL=${q(mock + '/graph')}`, `FACEBOOK_JWKS_URL=${q(mock + '/jwks')}`, `GOOGLE_WEB_CLIENT_ID=${q('test-google-client')}`, `GOOGLE_WEB_CLIENT_SECRET=${q('g-web-secret')}`, `GOOGLE_AUTH_URL=${q(mock + '/gauth')}`, `FACEBOOK_DIALOG_URL=${q(mock + '/fbdialog')}`,
   `APPLE_BUNDLE_ID=${q(bundle)}`, `APPLE_ISSUER_ID=${q('issuer-1')}`, `APPLE_KEY_ID=${q('KEY123')}`, `APPLE_PRIVATE_KEY=${q(pem(ap.privateKey, 'pkcs8'))}`, `APPLE_API_BASE=${q(mock)}`,
 ].join('\n') + '\n');
 console.log('keys + ' + devvars + ' written');

@@ -46,9 +46,18 @@ export const socialSignIn = (provider) => async (req, env) => {
   if (!(await rateLimit(db, 'social:ip:' + (await sha256(clientIp(req))), 30, 900e3))) throw new ApiError(429, 'too_many_requests');
   const c = await P.identity(env, b);
   if (typeof b.nonce === 'string' && c.nonce && c.nonce !== b.nonce && c.nonce !== (await sha256(b.nonce))) throw new ApiError(401, 'invalid_nonce');
+  const r = await signInIdentity(req, env, provider, c, b, deviceFrom(b));
+  const tokens = await createSession(db, r.userId, r.deviceId, req);
+  return json(req, r.created ? 201 : 200, { ...tokens, created: r.created, ...(await meBody(db, r.userId)) });
+};
+
+// Shared by the in-app token flow above and the browser flow (oauth.js): find or create the account for a
+// verified provider identity. Returns { userId, deviceId, created }; the caller makes the session.
+export async function signInIdentity(req, env, provider, c, b, dev) {
+  const P = PROVIDERS[provider], db = env.DB;
   const sub = String(c.sub || ''); if (!sub) throw new ApiError(401, 'invalid_token');
   const email = c.email ? String(c.email).toLowerCase().slice(0, 254) : null;
-  const dev = deviceFrom(b), now = Date.now();
+  const now = Date.now();
   let userId = (await db.prepare('SELECT user_id FROM identities WHERE provider = ? AND subject = ?').bind(provider, sub).first())?.user_id;
   let created = false;
   if (!userId) {
@@ -75,10 +84,12 @@ export const socialSignIn = (provider) => async (req, env) => {
   const u = await db.prepare('SELECT status FROM users WHERE id = ?').bind(userId).first();
   if (!u || u.status !== 'active') throw new ApiError(403, 'account_disabled');
   const deviceId = await upsertDevice(db, userId, dev);
-  const tokens = await createSession(db, userId, deviceId, req);
-  await audit(db, 'user', userId, created ? 'register_' + provider : 'login_' + provider, null, { platform: dev && dev.platform }, country(req));
-  return json(req, created ? 201 : 200, { ...tokens, created, ...(await meBody(db, userId)) });
-};
+  await audit(db, 'user', userId, created ? 'register_' + provider : 'login_' + provider, null, { platform: dev && dev.platform, flow: b.flow || 'token' }, country(req));
+  return { userId, deviceId, created };
+}
+export const facebookIdentity = (env, accessToken) => PROVIDERS.facebook.identity(env, { access_token: accessToken });
+export const fbConfigured = fbOn;
+export const googleWebFlowOn = (env) => !!(env.GOOGLE_WEB_CLIENT_ID && env.GOOGLE_WEB_CLIENT_SECRET);
 
 // GET /auth/providers — which sign-in buttons work, plus the PUBLIC ids the app needs to start each SDK.
 export async function providers(req, env) {
@@ -86,8 +97,9 @@ export async function providers(req, env) {
   return json(req, 200, {
     email: true,
     email_codes: !!(env.RESEND_API_KEY && env.EMAIL_FROM),
-    google: { enabled: g.length > 0, web_client_id: env.GOOGLE_WEB_CLIENT_ID || g[0] || null },
+    // browser: true → the app opens /auth/<provider>/start in the browser (works without any app plugin)
+    google: { enabled: g.length > 0 || googleWebFlowOn(env), browser: googleWebFlowOn(env), web_client_id: env.GOOGLE_WEB_CLIENT_ID || g[0] || null },
     apple: { enabled: csv(env.APPLE_CLIENT_IDS).length > 0, service_id: env.APPLE_SERVICE_ID || null },
-    facebook: { enabled: fbOn(env), app_id: fbOn(env) ? env.FACEBOOK_APP_ID : null },
+    facebook: { enabled: fbOn(env), browser: fbOn(env), app_id: fbOn(env) ? env.FACEBOOK_APP_ID : null },
   }, { 'Cache-Control': 'public, max-age=300' });
 }

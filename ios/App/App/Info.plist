@@ -80,5 +80,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.seascout.marine.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app.seascout.marine</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

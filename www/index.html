@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.63-required-2026-11-20">
+<meta name="sea-scout-build" content="standalone-r14.15.64-browser-signin-2026-11-20">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.63 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.64 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.63</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.64</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.63 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.64 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.63-required-2026-11-20
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.63-required-2026-11-20';
+// SEA_SCOUT_BUILD=standalone-r14.15.64-browser-signin-2026-11-20
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.64-browser-signin-2026-11-20';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -7291,7 +7291,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.63';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.64';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -7478,8 +7478,17 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   if(!A.ready&&!A.early)return false;
   const f=(A.ready?A.flags:cachedFlags()||{login_screen:{enabled:true},login_required:{enabled:true}})||{};if(!(f.login_screen&&f.login_screen.enabled))return false;
   if(!(f.login_required&&f.login_required.enabled)){try{if(+localStorage.getItem(SKIP_KEY)>Date.now())return false;}catch(_){}}
-  return navigator.onLine!==false;
+  return true;
  }
+ // r14.15.64: internet only — a signed-out user without internet (or when the server can't be reached) sees
+ // "connect to the internet" with retry; it re-checks by itself when the connection comes back.
+ let netTimer=null;
+ function netGate(){
+  A.early=true;if(!gateWanted())return;showGate('net');
+  if(!netTimer)netTimer=setInterval(()=>{if(navigator.onLine!==false)retryNet();},10000);
+ }
+ function retryNet(){const m=document.getElementById('gMsg');if(m)m.textContent='กำลังเชื่อมต่อ…';start();}
+ addEventListener('online',()=>{if(!A.session&&document.getElementById('seaGate'))retryNet();});
  // r14.15.62: the gate is put up under the splash at launch (no map flash), then confirmed or removed once the server answers.
  function maybeGate(){
   if(!gateWanted()){closeGate();return;}
@@ -7489,7 +7498,8 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  function earlyGate(){
   try{if(localStorage.getItem('seaSignedIn')==='1'||JSON.parse(localStorage.getItem(KEY)||'null'))return;}catch(_){}
   const f=cachedFlags();if(f&&f.accounts&&!f.accounts.enabled)return;
-  A.early=true;if(gateWanted())showGate();
+  A.early=true;if(!gateWanted())return;
+  if(navigator.onLine===false)netGate();else showGate();
  }
  const PV=()=>A.providers||{};
  const GI={google:'<span class="gI" style="color:#4285f4">G</span>',facebook:'<span class="gI">f</span>',apple:'<span class="gI"></span>'};
@@ -7499,6 +7509,12 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   let g=document.getElementById('seaGate');if(!g){g=document.createElement('div');g.id='seaGate';g.setAttribute('role','dialog');g.setAttribute('aria-modal','true');document.body.appendChild(g);}
   const F=(A.ready?A.flags:cachedFlags())||{login_required:{enabled:true}};const req=!!(F.login_required&&F.login_required.enabled);
   g.dataset.view=view||'main';
+  if(view==='net'){
+   g.innerHTML=`<div class="gBox"><div class="gLogo">📡</div><h1>Sea Scout</h1><p>ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ<br>เปิด Wi-Fi หรือเน็ตมือถือ แล้วลองใหม่</p>
+    <button type="button" class="gF" id="gRetry">ลองใหม่</button><div class="gMsg" id="gMsg"></div></div>`;
+   g.querySelector('#gRetry').onclick=retryNet;return;
+  }
+  if(netTimer){clearInterval(netTimer);netTimer=null;}
   if(view==='email'){
    g.innerHTML=`<div class="gBox"><div class="gLogo">🌊</div><h1>Sea Scout</h1><p>${mode==='login'?'เข้าสู่ระบบด้วยอีเมล':'สมัครด้วยอีเมล'}</p>
     <input type="email" id="gEm" autocomplete="email" placeholder="อีเมล" inputmode="email"><input type="password" id="gPw" autocomplete="${mode==='login'?'current-password':'new-password'}" placeholder="${mode==='login'?'รหัสผ่าน':'ตั้งรหัสผ่าน (อย่างน้อย 10 ตัวอักษร)'}">
@@ -7520,7 +7536,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
     <button type="button" class="gE" id="gEmail">✉️ ใช้อีเมล</button>
     ${req?'':'<button type="button" class="gSkip" id="gSkip">ข้ามไปก่อน</button>'}
     <div class="gMsg" id="gMsg"></div>
-    <small>การดำเนินการต่อถือว่ายอมรับนโยบายความเป็นส่วนตัวของ Sea Scout · ระบบนำทางและแผนที่ใช้ได้แม้ไม่มีอินเทอร์เน็ต</small></div>`;
+    <small>การดำเนินการต่อถือว่ายอมรับนโยบายความเป็นส่วนตัวของ Sea Scout · ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเข้าสู่ระบบ</small></div>`;
    g.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>social(b.dataset.p));
    g.querySelector('#gEmail').onclick=()=>showGate('email');
    const sk=g.querySelector('#gSkip');if(sk)sk.onclick=()=>{try{localStorage.setItem(SKIP_KEY,String(Date.now()+3*86400e3));}catch(_){}closeGate();};
@@ -7559,10 +7575,43 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   const e=new Error('plugin_missing');throw e;
  }
  const PNAME={google:'Google',facebook:'Facebook',apple:'Apple'};
+ // ---- r14.15.64: Google / Facebook through the browser (same on Android, iPhone/iPad and the website; no app plugin) ----
+ // The server finishes the sign-in and sends back app.seascout.marine://auth?h=<one-time code> (website: /#ssauth&h=…).
+ const BERR={cancelled:'ยกเลิกแล้ว',login_expired:'หมดเวลา · กดเข้าสู่ระบบอีกครั้ง',account_exists_sign_in_first:'อีเมลนี้มีบัญชีอยู่แล้ว · เข้าสู่ระบบด้วยอีเมลก่อน แล้วค่อยเชื่อม Facebook',
+  email_required:'บัญชีนี้ไม่ได้ให้อีเมล · อนุญาตการเข้าถึงอีเมล หรือใช้อีเมลสมัคร',google_signin_not_configured:'Google ยังไม่เปิดให้ใช้ · ใช้อีเมลไปก่อนได้',
+  facebook_signin_not_configured:'Facebook ยังไม่เปิดให้ใช้ · ใช้อีเมลไปก่อนได้',provider_error:'ผู้ให้บริการตอบกลับผิดพลาด · ลองใหม่',too_many_requests:'ลองบ่อยเกินไป · รอสักครู่',account_disabled:'บัญชีนี้ถูกระงับ'};
+ function browserLogin(p){
+  const d=device(),u=new URL(base()+'auth/'+p+'/start');
+  Object.entries({platform:d.platform,install_id:d.install_id,model:d.model,app_version:d.app_version,locale:(window.SeaI18n&&SeaI18n.lang)||'th'}).forEach(([k,v])=>{if(v)u.searchParams.set(k,v);});
+  gMsg('กำลังเปิด '+PNAME[p]+' ในเบราว์เซอร์…');
+  try{sessionStorage.setItem('seaAuthPending',p);}catch(_){}
+  location.href=u.toString(); // in the app Capacitor hands non-app URLs to the phone's browser
+ }
+ let handoffBusy=false;
+ async function authReturn(raw){
+  if(!raw||handoffBusy)return;
+  let q;try{q=new URLSearchParams(String(raw).replace(/^[^?#]*[?#]/,'').replace(/^ssauth&?/,''));}catch(_){return;}
+  const h=q.get('h'),err=q.get('err');
+  if(!h&&!err)return;
+  if(err){A.early=true;if(!document.getElementById('seaGate'))showGate();gMsg(BERR[err]||('เข้าสู่ระบบไม่สำเร็จ ('+err+')'));return;}
+  handoffBusy=true;
+  try{const r=await http('POST','auth/handoff',{code:h});await signedIn(r);say('✅ เข้าสู่ระบบแล้ว');}
+  catch(e){A.early=true;if(!document.getElementById('seaGate'))showGate();gMsg(BERR[e&&(e.code||e.message)]||errText(e));}
+  finally{handoffBusy=false;}
+ }
+ (function(){
+  if(/^#ssauth/.test(location.hash)){const hsh=location.hash;try{history.replaceState(null,'',location.pathname+location.search);}catch(_){}setTimeout(()=>authReturn(hsh),0);}
+  const App=P.App;
+  if(native&&App){
+   try{App.addListener('appUrlOpen',e=>{if(e&&/^app\.seascout\.marine:\/\/auth/i.test(e.url||''))authReturn(e.url);});}catch(_){}
+   try{App.getLaunchUrl&&App.getLaunchUrl().then(r=>{if(r&&/^app\.seascout\.marine:\/\/auth/i.test(r.url||''))authReturn(r.url);}).catch(()=>{});}catch(_){}
+  }
+ })();
  async function social(p){
   if(!A.ready||A.providers===undefined){gMsg('กำลังเชื่อมต่อ…');const t0=Date.now();while((!A.ready||A.providers===undefined)&&Date.now()-t0<8000)await new Promise(r=>setTimeout(r,200));}
   const pv=PV()[p];
   if(!pv||!pv.enabled){gMsg(`เข้าสู่ระบบด้วย ${PNAME[p]} ยังไม่เปิดให้ใช้ · ใช้อีเมลไปก่อนได้`);return;}
+  if(pv.browser&&!(native&&P.SocialLogin)){browserLogin(p);return;}
   gMsg('กำลังเชื่อมต่อ '+PNAME[p]+'…');
   try{
    const t=await providerToken(p);
@@ -7581,7 +7630,9 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   const saved=await store.get();
   if(saved&&saved.session){A.session=saved.session;A.me=saved.me||null;closeGate();try{localStorage.setItem('seaSignedIn','1');}catch(_){}}
   let h=null;try{h=await http('GET','health');}catch(_){}
-  if(!h||!h.db){A.early=false;closeGate();if(A.session&&A.me){A.ready=true;try{A.flags=(saved&&saved.flags)||{};}catch(_){}applyEnt(true);render();}return;}
+  if(!h||!h.db){
+   if(!A.session){A.ready=false;netGate();return;}
+   A.early=false;closeGate();if(A.session&&A.me){A.ready=true;try{A.flags=(saved&&saved.flags)||{};}catch(_){}applyEnt(true);render();}return;}
   try{const f=await http('GET','flags');A.flags=f.flags||{};try{localStorage.setItem(FKEY,JSON.stringify(A.flags));}catch(_){}}catch(_){A.flags={};}
   if(!(A.flags.accounts&&A.flags.accounts.enabled)){A.early=false;closeGate();return;}
   A.ready=true;render();

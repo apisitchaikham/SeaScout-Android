@@ -1,0 +1,86 @@
+{
+ "pass": 20,
+ "fail": 0,
+ "results": [
+  {
+   "name": "providers: google.browser + facebook.browser",
+   "ok": true
+  },
+  {
+   "name": "google/android: ends at app.seascout.marine://auth?h=…",
+   "ok": true
+  },
+  {
+   "name": "google/android: return page has no-store + CSP + no tokens",
+   "ok": true
+  },
+  {
+   "name": "handoff → 201 new account with tokens + email",
+   "ok": true
+  },
+  {
+   "name": "handoff device recorded (android)",
+   "ok": true
+  },
+  {
+   "name": "access token works on /me",
+   "ok": true
+  },
+  {
+   "name": "device from start= query saved (platform android)",
+   "ok": true
+  },
+  {
+   "name": "handoff code works only once",
+   "ok": true
+  },
+  {
+   "name": "google/ios second time → 200 same account",
+   "ok": true
+  },
+  {
+   "name": "google/web: 302 back to site /#ssauth&h=…",
+   "ok": true
+  },
+  {
+   "name": "web handoff works",
+   "ok": true
+  },
+  {
+   "name": "cancel → app gets err=cancelled",
+   "ok": true
+  },
+  {
+   "name": "facebook/android → 201 new account",
+   "ok": true
+  },
+  {
+   "name": "facebook with existing email → err=account_exists_sign_in_first",
+   "ok": true
+  },
+  {
+   "name": "facebook without email → err=email_required",
+   "ok": true
+  },
+  {
+   "name": "unknown state → login_expired (web redirect)",
+   "ok": true
+  },
+  {
+   "name": "callback URL replay refused",
+   "ok": true
+  },
+  {
+   "name": "start sends PKCE S256 + nonce + state to Google",
+   "ok": true
+  },
+  {
+   "name": "handoff rejects malformed code",
+   "ok": true
+  },
+  {
+   "name": "start rate-limited per IP (→ err=too_many_requests)",
+   "ok": true
+  }
+ ]
+}

@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 
 const [dir, port] = [process.argv[2], +process.argv[3] || 8790];
 const K = JSON.parse(fs.readFileSync(dir + '/keys.json', 'utf8'));
-const state = { emails: [], acks: [], google: {}, apple: {}, fb: {} };
+const state = { emails: [], acks: [], google: {}, apple: {}, fb: {}, codes: {}, nextGoogle: null, nextFb: null };
 const b64u = (b) => Buffer.from(b).toString('base64url');
 const unsigned = (o) => b64u(JSON.stringify({ alg: 'ES256' })) + '.' + b64u(JSON.stringify(o)) + '.sig';
 
@@ -22,6 +22,31 @@ http.createServer(async (req, res) => {
   let body = ''; for await (const c of req) body += c;
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/jwks') return send(res, 200, { keys: [K.idJwk] });
+  // ---- browser sign-in (r14.15.64): Google authorize + code exchange, Facebook dialog + code exchange ----
+  if (u.pathname === '/gauth' || u.pathname === '/fbdialog') {
+    const g = u.pathname === '/gauth', who = g ? state.nextGoogle : state.nextFb;
+    const back = new URL(u.searchParams.get('redirect_uri'));
+    if (!who) { back.searchParams.set('error', 'access_denied'); back.searchParams.set('state', u.searchParams.get('state')); res.writeHead(302, { Location: back.toString() }); return res.end(); }
+    const code = 'c' + crypto.randomBytes(9).toString('hex');
+    state.codes[code] = { g, who, nonce: u.searchParams.get('nonce'), challenge: u.searchParams.get('code_challenge'), redirect: u.searchParams.get('redirect_uri'), client: u.searchParams.get('client_id') };
+    back.searchParams.set('code', code); back.searchParams.set('state', u.searchParams.get('state'));
+    res.writeHead(302, { Location: back.toString() }); return res.end();
+  }
+  if (u.pathname === '/token' && new URLSearchParams(body).get('grant_type') === 'authorization_code') {
+    const f = new URLSearchParams(body), c = state.codes[f.get('code')]; delete state.codes[f.get('code')];
+    if (!c || !c.g || f.get('client_secret') !== 'g-web-secret' || f.get('redirect_uri') !== c.redirect || f.get('client_id') !== c.client) return send(res, 400, { error: 'invalid_grant' });
+    if (crypto.createHash('sha256').update(f.get('code_verifier') || '').digest('base64url') !== c.challenge) return send(res, 400, { error: 'invalid_grant', why: 'pkce' });
+    const now = Math.floor(Date.now() / 1000);
+    const h = b64u(JSON.stringify({ alg: 'RS256', kid: 'test-kid-1', typ: 'JWT' })), p = b64u(JSON.stringify({ iss: 'https://accounts.google.com', aud: c.client, sub: c.who.sub, email: c.who.email, email_verified: true, name: c.who.name, nonce: c.nonce, iat: now, exp: now + 600 }));
+    const sig = crypto.sign('RSA-SHA256', Buffer.from(h + '.' + p), K.idPriv).toString('base64url');
+    return send(res, 200, { id_token: h + '.' + p + '.' + sig, access_token: 'ya29.test', expires_in: 3599 });
+  }
+  if (u.pathname === '/graph/oauth/access_token') {
+    const c = state.codes[u.searchParams.get('code')]; delete state.codes[u.searchParams.get('code')];
+    if (!c || c.g || u.searchParams.get('client_secret') !== K.fbSecret || u.searchParams.get('redirect_uri') !== c.redirect) return send(res, 400, { error: { message: 'bad code' } });
+    return send(res, 200, { access_token: c.who.token, token_type: 'bearer' });
+  }
+  if (u.pathname === '/_next' && req.method === 'POST') { const j = JSON.parse(body); if ('google' in j) state.nextGoogle = j.google; if ('fb' in j) state.nextFb = j.fb; return send(res, 200, {}); }
   if (u.pathname === '/token') { // Google OAuth (service-account JWT bearer)
     const a = new URLSearchParams(body).get('assertion'); const c = a && verifyJwt(a, K.saPub, 'RS256');
     if (!c || c.scope !== 'https://www.googleapis.com/auth/androidpublisher') return send(res, 401, { error: 'bad_assertion' });
