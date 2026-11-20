@@ -44,12 +44,14 @@ export async function authenticate(db, request) {
   const m = /^Bearer\s+([A-Za-z0-9_-]{20,100})$/.exec(h);
   if (!m) throw new ApiError(401, 'unauthorized');
   const row = await db.prepare(
-    `SELECT s.id AS sid, s.user_id, s.device_id, s.family_id, s.access_exp, u.email, u.email_verified, u.status, u.created_at, u.password_hash
+    `SELECT s.id AS sid, s.user_id, s.device_id, s.family_id, s.access_exp, s.last_used_at, u.email, u.email_verified, u.status, u.created_at, u.password_hash
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.access_hash = ? AND s.revoked_at IS NULL`).bind(await sha256(m[1])).first();
   if (!row || row.access_exp < Date.now()) throw new ApiError(401, 'unauthorized');
   if (row.status !== 'active') throw new ApiError(403, 'account_disabled');
-  await db.prepare('UPDATE sessions SET last_used_at = ? WHERE id = ?').bind(Date.now(), row.sid).run();
+  // r14.15.67: write "last used" at most once an hour per session (D1 free plan: 100k row writes/day)
+  const now = Date.now();
+  if (!row.last_used_at || now - row.last_used_at > 3600e3) await db.prepare('UPDATE sessions SET last_used_at = ? WHERE id = ?').bind(now, row.sid).run();
   return row;
 }
 

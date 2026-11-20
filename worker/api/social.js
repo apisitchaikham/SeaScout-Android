@@ -92,14 +92,15 @@ export const fbConfigured = fbOn;
 export const googleWebFlowOn = (env) => !!(env.GOOGLE_WEB_CLIENT_ID && env.GOOGLE_WEB_CLIENT_SECRET);
 
 // GET /auth/providers — which sign-in buttons work, plus the PUBLIC ids the app needs to start each SDK.
-export async function providers(req, env) {
+export function providersBody(env) {
   const g = csv(env.GOOGLE_CLIENT_IDS);
-  return json(req, 200, {
+  return {
     email: true,
     email_codes: !!(env.RESEND_API_KEY && env.EMAIL_FROM),
     // browser: true → the app opens /auth/<provider>/start in the browser (works without any app plugin)
     google: { enabled: g.length > 0 || googleWebFlowOn(env), browser: googleWebFlowOn(env), web_client_id: env.GOOGLE_WEB_CLIENT_ID || g[0] || null },
     apple: { enabled: csv(env.APPLE_CLIENT_IDS).length > 0, service_id: env.APPLE_SERVICE_ID || null },
     facebook: { enabled: fbOn(env), browser: fbOn(env), app_id: fbOn(env) ? env.FACEBOOK_APP_ID : null },
-  }, { 'Cache-Control': 'public, max-age=300' });
+  };
 }
+export async function providers(req, env) { return json(req, 200, providersBody(env), { 'Cache-Control': 'public, max-age=300' }); }

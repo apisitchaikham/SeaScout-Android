@@ -1,6 +1,6 @@
 // Sea Scout API v1 — shared helpers (HTTP, crypto, validation). No secrets live in this code.
 export const VERSION = 'api-v1.0.0';
-export const ACCESS_TTL = 60 * 60 * 1000;            // 1 hour
+export const ACCESS_TTL = 24 * 60 * 60 * 1000;       // 24 hours (r14.15.67: fewer refresh calls; revocation is still checked on every request)
 export const REFRESH_TTL = 60 * 24 * 60 * 60 * 1000;  // 60 days
 export const PBKDF2_ITER = 100000;                    // Workers WebCrypto maximum
 export const LOCALES = ['th', 'en', 'zh', 'vi', 'my', 'km', 'ms', 'id', 'fil'];

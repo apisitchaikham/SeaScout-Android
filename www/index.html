@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.66-providers-2026-11-20">
+<meta name="sea-scout-build" content="standalone-r14.15.67-budget-2026-11-20">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.66 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.67 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -765,7 +765,7 @@ async function seaResilientMarine(b,m){
  const chrome=(ua.match(/Chrome\/(\d+)/)||[])[1]||'';
  function build(){try{return document.querySelector('meta[name=sea-scout-build]').content;}catch(_){return'';}}
  function send(k,m,s,src){
-  if(!on()||sent>=8)return;m=String(m||'');if(k!=='open'&&NOISE.test(m))return;
+  if(!on()||sent>=3)return;m=String(m||'');if(k!=='open'&&NOISE.test(m))return;
   const sig=k+'|'+m.slice(0,160)+'|'+(src||'');if(seen.has(sig))return;seen.add(sig);sent++;
   const body=JSON.stringify({k,m:m.slice(0,500),s:String(s||'').slice(0,2000),src:String(src||'').replace(/[?#].*$/,'').slice(0,200),b:build(),
    app:/^(localhost|127\.0\.0\.1)$/.test(location.hostname),lang:(window.SeaI18n&&SeaI18n.lang)||'',plat,chrome,d:new Date().toISOString().slice(0,10)});
@@ -774,7 +774,7 @@ async function seaResilientMarine(b,m){
  }
  addEventListener('error',e=>{if(e&&e.target&&e.target!==window)return;send('error',e.message,e.error&&e.error.stack,(e.filename||'')+':'+(e.lineno||0)+':'+(e.colno||0));},true);
  addEventListener('unhandledrejection',e=>{const r=e&&e.reason;send('promise',(r&&r.message)||String(r),r&&r.stack,'');});
- try{const d=new Date().toISOString().slice(0,10);if(on()&&localStorage.getItem(KEY+'Day')!==d){localStorage.setItem(KEY+'Day',d);setTimeout(()=>send('open','daily open','',''),4000);}}catch(_){}
+ // r14.15.67: the daily "open" ping was removed (1 Worker request per user per day on the free plan); usage numbers come from Cloudflare analytics instead.
  window.seaReport=(m,extra)=>send('manual',m,extra||'','');
  function ui(){
   const p=document.getElementById('unitsPanel')||document.getElementById('langPanel');if(!p||document.getElementById('seaDiag'))return;
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.66</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.67</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.66 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.67 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.66-providers-2026-11-20
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.66-providers-2026-11-20';
+// SEA_SCOUT_BUILD=standalone-r14.15.67-budget-2026-11-20
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.67-budget-2026-11-20';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -5453,7 +5453,11 @@ const SeaProxy=(()=>{
   return SEA_PROXY_DEFAULT;
  }
  function set(v){try{v=String(v||'').trim();if(v)localStorage.setItem(KEY,v);else localStorage.removeItem(KEY);}catch(_){}downUntil=0;}
- function usable(){return !!base()&&Date.now()>downUntil;}
+ // r14.15.67: the shared cache is a Cloudflare Worker too; on the free plan its requests share the account's 100k/day
+ // with sign-in, so it is used only when the "data_proxy" flag is on (Admin). Off → straight to NOAA, as before r29.
+ function flagOn(){try{const f=window.seaFlags||(JSON.parse(localStorage.getItem('seaBootV1')||'null')||{data:{}}).data.flags||{};return !!(f.data_proxy&&f.data_proxy.enabled);}catch(_){return false;}}
+ function usable(){let forced='';try{forced=new URLSearchParams(location.search).get('proxy')||localStorage.getItem(KEY)||'';}catch(_){}
+  return !!base()&&Date.now()>downUntil&&(!!forced||flagOn());}
  function markDown(){downUntil=Date.now()+10*60e3;}
  async function erddap(url,ms){
   const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),Math.min(ms||30000,30000));
@@ -6971,18 +6975,35 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  document.addEventListener('scroll',e=>{const t=e.target;if(!t||!t.classList||!t.classList.contains('anTrack'))return;const i=Math.round(t.scrollLeft/Math.max(1,t.clientWidth));t.parentNode.querySelectorAll('.dots i').forEach((d,k)=>d.classList.toggle('on',k===i));},true);
  // r14.15.60: products from the commerce API (images bound to the product, link bound to the offer); cached 30 min
  const SHOP=new Map();window.seaCommerceFor=(t,p)=>commerceFor(t,p);
+ // r14.15.67: the whole catalogue in one request, kept on the phone for 12 hours; species/gear matched here
+ // (was one Worker request per species per analysis — too many for Cloudflare's free plan).
+ const CATK='seaShopCatalogV1',CAT_TTL=12*3600e3;let catMem=null,catBusy=null;
+ async function catalogue(base,lang){
+  const fresh=c=>c&&c.lang===lang&&Date.now()-c.at<CAT_TTL;
+  if(fresh(catMem))return catMem.j;
+  try{const c=JSON.parse(localStorage.getItem(CATK)||'null');if(fresh(c)){catMem=c;return c.j;}}catch(_){}
+  if(catBusy)return catBusy;
+  catBusy=(async()=>{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),6000);
+   try{const r=await fetch(base+'commerce/catalog?lang='+encodeURIComponent(lang),{signal:ctl.signal});
+    if(r.ok){const j=await r.json();catMem={at:Date.now(),lang,j};try{localStorage.setItem(CATK,JSON.stringify(catMem));}catch(_){}return j;}}
+   catch(_){}finally{clearTimeout(t);catBusy=null;}
+   return null;})();
+  return catBusy;
+ }
  async function commerceFor(tops,p){
   const out={};try{
    const base=typeof seaApiBase==='function'?seaApiBase():'https://seascout.apisit-chaikham.workers.dev/api/v1/';
-   const flags=(window.SeaAccount&&SeaAccount.flags)||{};if(flags.commerce_api&&flags.commerce_api.enabled===false)return out;
+   const flags=window.seaFlags||(window.SeaAccount&&SeaAccount.flags)||{};if(flags.commerce_api&&flags.commerce_api.enabled===false)return out;
    const lang=(window.SeaI18n&&SeaI18n.lang)||'th',plat=window.SEA_PLATFORM||'web';
-   await Promise.all(tops.slice(0,6).map(async x=>{
-    const sp=x.sp,q=new URLSearchParams({species:sp.id,gear:gearOf(sp),cat:sp.cat||'',group:sp.g==='หมึก'?'squid':'fish',lang,limit:'6'});
-    const key=q.toString(),c=SHOP.get(key);let j=c&&Date.now()-c.at<30*60e3?c.j:null;
-    if(!j){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),5000);try{const r=await fetch(base+'commerce/items?'+key,{signal:ctl.signal});if(r.ok){j=await r.json();SHOP.set(key,{at:Date.now(),j});}}catch(_){}clearTimeout(t);}
-    out[sp.id]=(j&&j.items||[]).map(it=>{const o=it.offers[0];return{title:it.title,desc:it.desc,imgs:it.images.map(i=>i.url),thumb:it.images[0]&&it.images[0].url,
-     price:o&&o.price!=null?(Math.round(o.price*100)/100).toLocaleString()+' '+(o.currency||''):'',url:o?o.go+'?src='+encodeURIComponent(sp.id)+'&p='+plat:'',type:'product',for:[sp.id]};}).filter(it=>it.url);
-   }));
+   const cat=await catalogue(base,lang);const all=(cat&&cat.items)||[];if(!all.length)return out;
+   for(const x of tops.slice(0,6)){
+    const sp=x.sp,gear=gearOf(sp),c=sp.cat||'',grp=sp.g==='หมึก'?'squid':'fish';
+    const rank=t=>t.includes(sp.id)?0:t.includes(gear)?1:(c&&t.includes(c))?2:t.includes(grp)?3:4;
+    const want=new Set(['all',sp.id,gear,c,grp].filter(Boolean));
+    out[sp.id]=all.filter(it=>(it.tags||[]).some(t=>want.has(t))).sort((a,b)=>rank(a.tags)-rank(b.tags)||(a.sort||0)-(b.sort||0)).slice(0,6)
+     .map(it=>{const o=it.offers[0];return{title:it.title,desc:it.desc,imgs:it.images.map(i=>i.url),thumb:it.images[0]&&it.images[0].url,
+      price:o&&o.price!=null?(Math.round(o.price*100)/100).toLocaleString()+' '+(o.currency||''):'',url:o?o.go+'?src='+encodeURIComponent(sp.id)+'&p='+plat:'',type:'product',for:[sp.id]};}).filter(it=>it.url);
+   }
   }catch(_){}
   return out;
  }
@@ -7291,7 +7312,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.66';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.67';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -7645,27 +7666,40 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  window.seaShowLogin=()=>{if(A.ready&&!A.session){try{localStorage.removeItem(SKIP_KEY);}catch(_){}showGate();}};
 
  // ---- start: only when the server is ready ----
+ // r14.15.67: one request at launch (/boot = health + flags + providers), and none at all when signed in and the
+ // last answer is under 6 hours old — keeps Sea Scout inside Cloudflare's free plan (100k Worker requests/day).
+ const BKEY='seaBootV1',BOOT_TTL=6*3600e3,ME_TTL=12*3600e3;
+ function bootCache(){try{const c=JSON.parse(localStorage.getItem(BKEY)||'null');return c&&c.data?c:null;}catch(_){return null;}}
+ function keepBoot(d){try{localStorage.setItem(BKEY,JSON.stringify({at:Date.now(),data:d}));localStorage.setItem(FKEY,JSON.stringify(d.flags||{}));if(d.providers)localStorage.setItem(PCKEY,JSON.stringify(d.providers));}catch(_){}}
+ async function fetchBoot(){
+  try{const d=await http('GET','boot');keepBoot(d);return d;}
+  catch(e){
+   if(e.status!==404)return null;
+   // older server without /boot: the three separate calls
+   try{const h=await http('GET','health');if(!h||!h.db)return h;const f=await http('GET','flags');let p=null;try{p=await http('GET','auth/providers');}catch(_){}
+    const d={ok:true,db:true,flags:f.flags||{},providers:p};keepBoot(d);return d;}catch(_){return null;}
+  }
+ }
  async function start(){
   const saved=await store.get();
   if(saved&&saved.session){A.session=saved.session;A.me=saved.me||null;closeGate();try{localStorage.setItem('seaSignedIn','1');}catch(_){}}
-  let h=null;try{h=await http('GET','health');}catch(_){}
-  if(!h||!h.db){
+  const c=bootCache();
+  const b=(A.session&&c&&Date.now()-c.at<BOOT_TTL)?c.data:await fetchBoot();
+  if(!b||!b.db){
    if(!A.session){A.ready=false;netGate();return;}
-   A.early=false;closeGate();if(A.session&&A.me){A.ready=true;try{A.flags=(saved&&saved.flags)||{};}catch(_){}applyEnt(true);render();}return;}
-  try{const f=await http('GET','flags');A.flags=f.flags||{};try{localStorage.setItem(FKEY,JSON.stringify(A.flags));}catch(_){}}catch(_){A.flags={};}
+   A.early=false;closeGate();if(A.session&&A.me){A.ready=true;A.flags=(c&&c.data&&c.data.flags)||(saved&&saved.flags)||{};window.seaFlags=A.flags;applyEnt(true);render();}return;}
+  A.flags=b.flags||{};window.seaFlags=A.flags;A.providers=b.providers||null;
   if(!(A.flags.accounts&&A.flags.accounts.enabled)){A.early=false;closeGate();return;}
   A.ready=true;render();
-  if(A.session)loadMe();
+  if(A.session){if(!A.me||Date.now()-(A.me.checked_at||0)>ME_TTL)loadMe();else applyEnt(true);}
   maybeGate();
-  try{A.providers=await http('GET','auth/providers');try{localStorage.setItem(PCKEY,JSON.stringify(A.providers));}catch(_){}}catch(_){A.providers=null;}
-  if(!A.session)maybeGate();
-  try{const s=await store.get();if(s){s.flags=A.flags;await store.set(s);}}catch(_){}
  }
  window.seaAccountStart=start;
+ try{const c0=bootCache();if(c0)window.seaFlags=c0.data.flags||{};}catch(_){}
  const go=()=>{earlyGate();setTimeout(start,150);};
  if(document.readyState==='loading')addEventListener('DOMContentLoaded',go);else go();
  // refresh entitlements when the app comes back to the foreground
- document.addEventListener('visibilitychange',()=>{if(!document.hidden&&A.ready&&A.session&&(!A.me||Date.now()-(A.me.checked_at||0)>15*60e3))loadMe();});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&A.ready&&A.session&&(!A.me||Date.now()-(A.me.checked_at||0)>ME_TTL))loadMe();});
 })();
 
 </script>

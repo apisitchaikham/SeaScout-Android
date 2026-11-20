@@ -4,11 +4,11 @@
 import { ApiError, VERSION, LOCALES, PLATFORMS, json, readJson, corsHeaders, cleanEmail, checkPassword, str,
   hashPassword, safeEqual, newId, clientIp, country, sha256 } from './util.js';
 import { audit, rateLimit, upsertDevice, createSession, authenticate, rotateRefresh, entitlementsFor } from './store.js';
-import { socialSignIn, providers } from './social.js';
+import { socialSignIn, providers, providersBody } from './social.js';
 import { oauthStart, oauthCallback, oauthHandoff } from './oauth.js';
 import { forgot, reset, verifyRequest, verifyConfirm } from './email.js';
 import { googleVerify, googleNotify, appleVerify, appleNotify, billingTokens } from './billing.js';
-import { items as commerceItems, go as commerceGo } from './commerce.js';
+import { items as commerceItems, go as commerceGo, catalog as commerceCatalog } from './commerce.js';
 import { handleAdmin } from './admin.js';
 
 import { PRIVACY_VERSION_RE, deviceFrom, meBody } from './common.js';
@@ -169,11 +169,24 @@ async function deleteAccount(req, env) {
   return json(req, 200, { ok: true, deleted: true });
 }
 
-async function flags(req, env) {
+// r14.15.67: flags are read from D1 at most once a minute per Worker instance (free plan: 5M row reads/day).
+let FLAG_CACHE = null, FLAG_AT = 0;
+export function dropFlagCache() { FLAG_CACHE = null; FLAG_AT = 0; }
+async function flagMap(env) {
+  if (FLAG_CACHE && Date.now() - FLAG_AT < 60e3) return FLAG_CACHE;
   const { results } = await env.DB.prepare('SELECT key, enabled, rollout_pct FROM feature_flags').all();
   const out = {};
   for (const f of results) out[f.key] = { enabled: !!f.enabled, rollout_pct: f.rollout_pct };
-  return json(req, 200, { flags: out }, { 'Cache-Control': 'public, max-age=60' });
+  FLAG_CACHE = out; FLAG_AT = Date.now();
+  return out;
+}
+async function flags(req, env) {
+  return json(req, 200, { flags: await flagMap(env) }, { 'Cache-Control': 'public, max-age=60' });
+}
+// GET /boot — everything the app needs at launch in ONE request (was health + flags + providers = 3).
+async function boot(req, env) {
+  return json(req, 200, { ok: true, version: VERSION, db: true, time: Date.now(), flags: await flagMap(env), providers: providersBody(env) },
+    { 'Cache-Control': 'public, max-age=60' });
 }
 
 
@@ -208,8 +221,10 @@ const ROUTES = [
   ['POST', /^\/api\/v1\/billing\/apple\/notify$/, appleNotify],
   ['GET', /^\/api\/v1\/billing\/account-tokens$/, billingTokens],
   ['GET', /^\/api\/v1\/commerce\/items$/, commerceItems],
+  ['GET', /^\/api\/v1\/commerce\/catalog$/, commerceCatalog],
   ['GET', /^\/api\/v1\/go\/(off_[A-Za-z0-9_-]{16})$/, commerceGo],
   ['GET', /^\/api\/v1\/flags$/, flags],
+  ['GET', /^\/api\/v1\/boot$/, boot],
 ];
 
 function errorResponse(request, url, e) {

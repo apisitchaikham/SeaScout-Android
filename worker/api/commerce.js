@@ -37,6 +37,35 @@ export async function items(req, env) {
   return json(req, 200, { items: out, country: cc }, { 'Cache-Control': 'public, max-age=300' });
 }
 
+// r14.15.67: GET /commerce/catalog?lang=th&country=TH — every active product with its images and offers for that country,
+// so the app downloads the catalogue about twice a day and matches species/gear itself (was 1 request per species
+// per analysis). Kept in Worker memory for 5 minutes per country+language.
+const CAT_CACHE = new Map();
+export async function catalog(req, env) {
+  const url = new URL(req.url), db = env.DB, lang = str(url.searchParams.get('lang'), 5);
+  const cc = (/^[A-Z]{2}$/.test(url.searchParams.get('country') || '') ? url.searchParams.get('country') : country(req)) || '*';
+  const key = cc + '|' + (lang || ''), hit = CAT_CACHE.get(key);
+  if (hit && Date.now() - hit.at < 300e3) return json(req, 200, hit.body, { 'Cache-Control': 'public, max-age=300' });
+  const { results: prods } = await db.prepare(
+    `SELECT id, title, title_i18n, description, desc_i18n, brand, tags, sort FROM products WHERE active = 1 ORDER BY sort, updated_at DESC LIMIT 500`).all();
+  let items = [];
+  if (prods.length) {
+    const { results: imgs } = await db.prepare(`SELECT i.product_id, i.url, i.alt FROM product_images i JOIN products p ON p.id = i.product_id WHERE p.active = 1 ORDER BY i.sort`).all();
+    const { results: offs } = await db.prepare(
+      `SELECT o.id, o.product_id, o.country, o.currency, o.price, m.name AS merchant, m.kind FROM offers o JOIN merchants m ON m.id = o.merchant_id
+       WHERE o.active = 1 AND m.active = 1 AND (o.country = ? OR o.country = '*') ORDER BY (o.country = '*'), o.sort`).bind(cc).all();
+    const base = new URL('/api/v1/go/', req.url).href;
+    items = prods.map((p) => ({ id: p.id, title: pick(p.title_i18n, lang, p.title), desc: pick(p.desc_i18n, lang, p.description), brand: p.brand,
+      tags: JSON.parse(p.tags || '[]'), sort: p.sort,
+      images: imgs.filter((i) => i.product_id === p.id).map((i) => ({ url: i.url, alt: i.alt })),
+      offers: offs.filter((o) => o.product_id === p.id).map((o) => ({ id: o.id, merchant: o.merchant, kind: o.kind, country: o.country, currency: o.currency, price: o.price, go: base + o.id })) }))
+      .filter((p) => p.offers.length);
+  }
+  const body = { items, country: cc, at: Date.now() };
+  CAT_CACHE.set(key, { at: Date.now(), body });
+  return json(req, 200, body, { 'Cache-Control': 'public, max-age=300' });
+}
+
 // GET /go/{offer_id}?src=xsl&p=android → 302 to that offer's own URL (never to a URL from the request)
 export async function go(req, env, offerId) {
   const db = env.DB, url = new URL(req.url);

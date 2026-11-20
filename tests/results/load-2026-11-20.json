@@ -1,0 +1,26 @@
+{
+ "users": 10000,
+ "concurrency": 500,
+ "requests": 13500,
+ "seconds": 33.4,
+ "rps": 404,
+ "errors": 0,
+ "codes": {
+  "200": 13500
+ },
+ "p50_ms": {
+  "boot": "1077",
+  "me": "949",
+  "catalog": "911"
+ },
+ "p95_ms": {
+  "boot": "2266",
+  "me": "2242",
+  "catalog": "2217"
+ },
+ "p99_ms": {
+  "boot": "3147",
+  "me": "2971",
+  "catalog": "3131"
+ }
+}
