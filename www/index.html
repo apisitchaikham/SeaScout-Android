@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.64-browser-signin-2026-11-20">
+<meta name="sea-scout-build" content="standalone-r14.15.65-logout-2026-11-20">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.64 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.65 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.64</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.65</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.64 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.65 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.64-browser-signin-2026-11-20
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.64-browser-signin-2026-11-20';
+// SEA_SCOUT_BUILD=standalone-r14.15.65-logout-2026-11-20
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.65-logout-2026-11-20';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -7291,7 +7291,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.64';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.65';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -7383,8 +7383,23 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   let b=document.getElementById('seaAcct');if(!b){b=document.createElement('div');b.id='seaAcct';p.insertBefore(b,p.firstChild?p.firstChild.nextSibling:null);}
   return b;
  }
+ // r14.15.65: compact account bar at the top of the side panel — who is signed in + "ออกจากระบบ" in one tap.
+ const bcss=`#seaAcctBar{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px}
+#seaAcctBar .who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+#seaAcctBar button{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid #e53935;background:transparent;color:#e53935;font-weight:600;white-space:nowrap}`;
+ function bar(){
+  const aside=document.querySelector('aside');if(!aside)return;
+  let b=document.getElementById('seaAcctBar');
+  if(!A.session){if(b)b.remove();return;}
+  if(!document.getElementById('seaAcctBarCss')){const st=document.createElement('style');st.id='seaAcctBarCss';st.textContent=bcss;document.head.appendChild(st);}
+  if(!b){b=document.createElement('section');b.id='seaAcctBar';b.dataset.mgroup='more';aside.insertBefore(b,aside.firstChild);}
+  const u=(A.me&&A.me.user)||{};
+  b.innerHTML=`<span class="who">👤 ${esc(u.email||'บัญชี Sea Scout')}</span><button type="button" id="seaBarOut">ออกจากระบบ</button>`;
+  b.querySelector('#seaBarOut').onclick=e=>{const t=e.currentTarget;if(t.dataset.armed!=='1'){t.dataset.armed='1';t.textContent='แตะอีกครั้งเพื่อยืนยัน';setTimeout(()=>{if(t.isConnected){t.dataset.armed='';t.textContent='ออกจากระบบ';}},4000);return;}logout(false);};
+ }
  function say(t,err){msg=t||'';msgErr=!!err;const m=document.querySelector('#seaAcct .msg');if(m){m.textContent=msg;m.classList.toggle('err',msgErr);}}
  function render(note){
+  bar();
   if(!A.ready)return;const b=box();if(!b)return;if(note)say(note,true);
   if(!A.session){
    b.innerHTML=`<h3>👤 บัญชี Sea Scout</h3><small>ใช้บัญชีเดียวกันได้ทั้ง Android, iPhone และ iPad</small>
@@ -7434,7 +7449,8 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   A.me={user:r.user,profile:r.profile,plan:r.plan,subscription:r.subscription,entitlements:r.entitlements,checked_at:r.checked_at};
   await save();msg='';applyEnt(false);render();closeGate();
  }
- async function logout(all){try{await api('POST','auth/logout'+(all?'?all=1':''));}catch(_){}await signedOut();say(all?'ออกจากระบบทุกเครื่องแล้ว':'ออกจากระบบแล้ว');}
+ async function logout(all){try{await api('POST','auth/logout'+(all?'?all=1':''));}catch(_){}await signedOut();say(all?'ออกจากระบบทุกเครื่องแล้ว':'ออกจากระบบแล้ว');
+  try{localStorage.removeItem(SKIP_KEY);}catch(_){}A.early=true;maybeGate();}
  async function changePw(){
   const c=document.getElementById('saCur').value,n=document.getElementById('saNew').value;
   try{await api('POST','me/password',{current_password:c,new_password:n});say('✅ เปลี่ยนรหัสผ่านแล้ว · เครื่องอื่นถูกออกจากระบบ');document.getElementById('saCur').value='';document.getElementById('saNew').value='';}
