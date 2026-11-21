@@ -85,7 +85,7 @@ const AI_SYSTEM = 'You review advertising banners for a marine navigation and fi
   'Refuse anything that promotes or links to: gambling or betting of any kind (casino, slots, baccarat, football betting, lottery sites), ' +
   'adult or sexual content, illegal drugs, weapons, illegal loans, counterfeit goods, scams, alcohol or tobacco, or anything illegal under Thai law. ' +
   'Ordinary businesses (fishing gear, boats, marine services, resorts, restaurants, shops, apps) are allowed. ' +
-  'Reply with ONLY one JSON object: {"allowed":true|false,"category":"<short english category>","reason_th":"<one short Thai sentence when not allowed>"}';
+  'Do not explain or think aloud. Reply with ONLY one JSON object: {"allowed":true|false,"category":"<short english category>","reason_th":"<one short Thai sentence when not allowed>"}';
 
 export function parseVerdict(out) {
   const txt = typeof out === 'string' ? out : out && (out.response ?? (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) ?? out.result?.response);
@@ -94,9 +94,13 @@ export function parseVerdict(out) {
   const all = typeof out === 'string' ? out : JSON.stringify(out == null ? '' : out);
   const cands = [String(typeof txt === 'string' ? txt : ''), all.replace(/\\"/g, '"')];
   for (const c of cands) {
-    const ms = c.match(/\{[^{}]*"allowed"\s*:\s*(true|false)[^{}]*\}/g);
+    const ms = c.match(/\{[^{}]*"allowed"\s*:\s*(true|false)[^{}]*\}/gi);
     if (!ms) continue;
     for (const m of ms.reverse()) { try { const j = JSON.parse(m); if (typeof j.allowed === 'boolean') return j; } catch (_) {} }
+  }
+  for (const c of cands) {   // "allowed": "true" written as text
+    const m = c.match(/"allowed"\s*:\s*"?(true|false)"?/i);
+    if (m) return { allowed: m[1].toLowerCase() === 'true', category: ((c.match(/"category"\s*:\s*"([^"]{0,60})"/) || [])[1]) || '', reason_th: ((c.match(/"reason_th"\s*:\s*"([^"]{0,200})"/) || [])[1]) || '' };
   }
   return null;
 }
@@ -104,7 +108,7 @@ export function parseVerdict(out) {
 async function aiCheck(env, ad, page) {
   const user = `Shop name: ${ad.business}\nHeadline: ${ad.headline || '-'}\nLink: ${ad.link}\nLinked page title: ${page.title || '-'}\nLinked page text (start): ${(page.excerpt || '').slice(0, 1200)}\nThe banner image is attached.`;
   const input = { messages: [{ role: 'system', content: AI_SYSTEM },
-    { role: 'user', content: [{ type: 'text', text: user }, { type: 'image_url', image_url: { url: `data:${ad.image_type};base64,${ad.image_b64}` } }] }], max_tokens: 600, temperature: 0 };
+    { role: 'user', content: [{ type: 'text', text: user }, { type: 'image_url', image_url: { url: `data:${ad.image_type};base64,${ad.image_b64}` } }] }], max_tokens: 1500, temperature: 0 };
   let out;
   if (env.SPONSOR_AI_URL) {   // tests: an HTTP stand-in for env.AI
     const r = await fetch(env.SPONSOR_AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(20000) });
@@ -114,7 +118,7 @@ async function aiCheck(env, ad, page) {
     out = await env.AI.run(env.SPONSOR_AI_MODEL || '@cf/google/gemma-4-26b-a4b-it', input);
   } else return { ok: true, skipped: 'no_ai' };
   const v = parseVerdict(out);
-  if (!v) throw new Error('ai: no verdict: ' + JSON.stringify(out).slice(0, 260));
+  if (!v) throw new Error('ai: no verdict: ' + JSON.stringify((out && out.choices && out.choices[0]) || out).slice(0, 700));
   return v.allowed ? { ok: true, category: v.category || '' } : { ok: false, reason: 'ระบบ AI พบว่าโฆษณาไม่เป็นไปตามกฎ' + (v.reason_th ? `: ${String(v.reason_th).slice(0, 140)}` : ''), category: v.category || '' };
 }
 
@@ -140,7 +144,7 @@ export async function checkSponsor(env, ad, { tries = 0, withAi = true } = {}) {
     if (!ai.ok) return { verdict: 'fail', reason: ai.reason, detail };
     return { verdict: 'pass', detail };
   } catch (e) {
-    detail.ai = { error: String(e && e.message || e).slice(0, 120) };
+    detail.ai = { error: String(e && e.message || e).slice(0, 800) };
     if (tries + 1 >= 3) { detail.ai.fallback = 'rules_only'; return { verdict: 'pass', detail }; }
     return { verdict: 'retry', detail };
   }
