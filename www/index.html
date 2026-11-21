@@ -20,11 +20,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.68-autoshop-2026-11-21">
+<meta name="sea-scout-build" content="standalone-r14.15.69-heatfix-2026-11-21">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.68 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.69 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -789,9 +789,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.68</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.69</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.68 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.69 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1081,8 +1081,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.68-autoshop-2026-11-21
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.68-autoshop-2026-11-21';
+// SEA_SCOUT_BUILD=standalone-r14.15.69-heatfix-2026-11-21
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.69-heatfix-2026-11-21';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -1249,6 +1249,9 @@ const dirTh=d=>d==null?'–':['เหนือ','ตอ.เหนือ','ตะ
 const SC_BANDS=[[0,[46,160,90,120],'ไม่ค่อยมี'],[30,[150,205,70,175],'พอมี'],[50,[245,215,55,200],'ปานกลาง'],[65,[240,135,35,215],'ดี'],[80,[210,40,40,230],'โซนน่าลง']];
 const SC=SC_BANDS.flatMap((b,i)=>{const hi=i+1<SC_BANDS.length?SC_BANDS[i+1][0]-.01:100;return[[b[0],b[1]],[hi,b[1]]];});
 const scBand=x=>{let i=0;for(let j=0;j<SC_BANDS.length;j++)if(x>=SC_BANDS[j][0])i=j;return i;};
+const SEA_RN={};const seaRn=k=>SEA_RN[k]||(SEA_RN[k]=L.canvas({padding:.3}));
+// r14.15.69: red needs ≥80% AND top 15% of the scanned sea (raw score, before rounding/soft cap); other ≥80% spots show orange.
+const seaScDisp=(x,r)=>{const Q=G&&G.scQ;if(!Q||!(x===x)||!(r===r))return x;return x>=80&&r<Q[0]?79.99:x;};
 const TP=[[0,[40,90,200,170]],[.35,[60,190,205,170]],[.6,[250,225,80,180]],[1,[220,50,40,190]]];
 const CP=[[0,[25,60,150,170]],[.25,[30,150,160,178]],[.5,[110,200,80,188]],[.75,[235,210,60,198]],[1,[200,70,30,208]]];
 const DP=[[0,[190,240,235,150]],[.3,[80,170,220,170]],[1,[10,40,110,200]]];
@@ -1476,7 +1479,7 @@ function score(sp,v){
  const raw=100*base*(.5+.5*K)*mu;
  const value=Number.isFinite(raw)?Math.max(0,raw<=80?raw:80+15*(1-Math.exp(-(raw-80)/25))):0;
  const coverage=[v?.sst,v?.dist,v?.depth,v?.wave,v?.cur,v?.chl].filter(finite).length;
- return{v:Math.round(value),T,D,Z,W,C,P,F,S,K,coverage};
+ return{v:Math.round(value),raw:Number.isFinite(raw)?raw:0,T,D,Z,W,C,P,F,S,K,coverage};
 }
 function shown(v){
  const m=SP_SEL;let best=null,bi=0;const isId=spIsId(m);
@@ -1485,7 +1488,7 @@ function shown(v){
   if(sp.id!==m){const t=v.sst,d=v.depth;if(typeof t==='number'&&t===t&&(t<sp.t[0]||t>sp.t[3]))return;if(typeof d==='number'&&d===d&&Array.isArray(sp.z)&&(d<sp.z[0]*.6||d>sp.z[1]*1.6))return;if(sp.prot)return;}
   if(m==='squid'&&sp.g!=='หมึก')return;if(m==='fish'&&sp.g!=='ปลา')return;if(isId&&sp.id!==m)return;
   const s=score(sp,v);if(!best||s.v>best.v){best=s;bi=i}});
- return best?{v:best.v,i:bi}:{v:0,i:0};
+ return best?{v:best.v,i:bi,r:best.raw}:{v:0,i:0,r:0};
 }
 function status(t,err){const e=$('status');e.textContent=t;e.className=err?'err':''}
 async function getJSON(url,tries=3){
@@ -2326,7 +2329,7 @@ function drawTile(cv,c){
    const lon=lonW+(lonE-lonW)*(sxi+.5)/R,v=sampleAt(lat,lon);
    if(!v||v.alpha<=0)continue;
    let q;
-   if(lay==='score'){let sv=G.scT?bil(G.scT,(lat-G.lats[0])/G.dLat,(lon-G.lons[0])/G.dLon):NaN;if(sv!==sv)sv=0;q=ramp(SC,sv);if(v.alpha>.5)bnd[sy*R+sxi]=scBand(sv);}
+   if(lay==='score'){let sv=G.scT?bil(G.scT,(lat-G.lats[0])/G.dLat,(lon-G.lons[0])/G.dLon):NaN;if(sv!==sv)sv=0;sv=seaScDisp(sv,G.scRT?bil(G.scRT,(lat-G.lats[0])/G.dLat,(lon-G.lons[0])/G.dLon):NaN);q=ramp(SC,sv);if(v.alpha>.5)bnd[sy*R+sxi]=scBand(sv);}
    else if(lay==='temp')q=Number.isFinite(v.sst)?ramp(TP,(v.sst-HS.tmin)/(HS.tmax-HS.tmin)):[0,0,0,0];
    else if(lay==='chl')q=v.chl==null?[0,0,0,0]:ramp(CP,clamp((Math.log10(v.chl)+1.5)/2.5));
    else q=v.depth==null?[0,0,0,0]:ramp(DP,Math.min(1,v.depth/HS.dcap));
@@ -2357,8 +2360,8 @@ function render(){
  for(let k=0;k<n;k++){if(!G.inner[k]||G.land[k])continue;if(Number.isFinite(G.sstF[k])){tmin=Math.min(tmin,G.sstF[k]);tmax=Math.max(tmax,G.sstF[k]);}if(!isNaN(G.depth[k]))ds.push(G.depth[k]);}
  ds.sort((a,b)=>a-b);const hasSst=tmin<=tmax&&Number.isFinite(tmin)&&Number.isFinite(tmax);if(hasSst&&tmax-tmin<1){tmin-=.5;tmax+=.5}
  HS={tmin:hasSst?tmin:0,tmax:hasSst?tmax:1,hasSst,dcap:ds.length?Math.max(10,ds[Math.floor(ds.length*.95)]):50};
- const cell=k=>{if(!G.inner[k]||G.land[k])return;const s=!needSc?{v:0,i:0}:shown({sst:Number.isFinite(G.sstF[k])?G.sstF[k]:null,wave:G.waveF[k],cur:G.curF[k],front:G.frontF[k],dist:isNaN(G.dist[k])?null:G.dist[k],depth:isNaN(G.depth[k])?null:G.depth[k],rock:G.rock[k],chan:G.chan[k],slope:G.slopeF[k],shadow:G.shadowF[k],chl:G.chlF[k]===G.chlF[k]?G.chlF[k]:null});G.sc[k]=s.v;G.spi[k]=s.i;};
- const finish=()=>{if(!G.scT||G.scT.length!==G.sc.length)G.scT=new Float32Array(G.sc.length);for(let k=0;k<G.sc.length;k++)G.scT[k]=(G.inner[k]&&!G.land[k])?G.sc[k]:NaN;heat.redraw();showZones();};
+ const cell=k=>{if(!G.inner[k]||G.land[k])return;const s=!needSc?{v:0,i:0}:shown({sst:Number.isFinite(G.sstF[k])?G.sstF[k]:null,wave:G.waveF[k],cur:G.curF[k],front:G.frontF[k],dist:isNaN(G.dist[k])?null:G.dist[k],depth:isNaN(G.depth[k])?null:G.depth[k],rock:G.rock[k],chan:G.chan[k],slope:G.slopeF[k],shadow:G.shadowF[k],chl:G.chlF[k]===G.chlF[k]?G.chlF[k]:null});G.sc[k]=s.v;G.spi[k]=s.i;if(!G.scR||G.scR.length!==G.sc.length)G.scR=new Float32Array(G.sc.length);G.scR[k]=s.r==null?s.v:s.r;};
+ const finish=()=>{if(!G.scT||G.scT.length!==G.sc.length)G.scT=new Float32Array(G.sc.length);for(let k=0;k<G.sc.length;k++)G.scT[k]=(G.inner[k]&&!G.land[k])?G.sc[k]:NaN;if(needSc&&G.scR){if(!G.scRT||G.scRT.length!==G.sc.length)G.scRT=new Float32Array(G.sc.length);for(let k=0;k<G.sc.length;k++)G.scRT[k]=G.scT[k]===G.scT[k]?G.scR[k]:NaN;const qk=SP_SEL+'|'+SP.map(sp=>spActive(sp)?1:0).join('');if(G.scQk!==qk){const a=[];for(let k=0;k<G.scRT.length;k++)if(G.scRT[k]===G.scRT[k])a.push(G.scRT[k]);a.sort((x,y)=>x-y);G.scQ=a.length>=20?[a[Math.min(a.length-1,Math.floor(a.length*.85))]]:null;G.scQk=qk;}}heat.redraw();showZones();};
  markers();arrows();legend();
  if(window.SEA_SC_PRESET&&needSc){window.SEA_SC_PRESET=false;finish();window.SEA_RENDER_DONE=Promise.resolve();return;}window.SEA_SC_PRESET=false;
  if(!needSc){for(let k=0;k<n;k++)cell(k);finish();window.SEA_RENDER_DONE=Promise.resolve();return;}
@@ -2368,7 +2371,7 @@ function render(){
 function markers(){
  if(mkLayer){map.removeLayer(mkLayer);mkLayer=null}
  if(!G||!G.have)return;
- const z=map.getZoom(),r=z<=8?2.5:z<=10?3.8:5.5,lg=L.layerGroup(),rn=L.canvas({padding:.3});
+ const z=map.getZoom(),r=z<=8?2.5:z<=10?3.8:5.5,lg=L.layerGroup(),rn=seaRn('mk');
  const line=(segs,color,halo)=>{if(!segs.length)return;const ll=segs.map(o=>o.p);lg.addLayer(L.polyline(ll,{renderer:rn,color:halo,weight:z<=9?4.2:6,opacity:.75,interactive:false}));lg.addLayer(L.polyline(ll,{renderer:rn,color,weight:z<=9?2.2:3.2,opacity:1,interactive:false}))};
  if($('chan').checked)line(G.segC,'#17e0e0','#06384a');
  if($('rock').checked){
@@ -2483,7 +2486,7 @@ function legend(){
  const grad=st.map(s=>`rgb(${s[1][0]|0},${s[1][1]|0},${s[1][2]|0}) ${((s[0]-a)/(b-a)*100).toFixed(0)}%`).join(',');
  const lb=lay==='score'?['0%','95%']:lay==='temp'?(HS.hasSst?[f(HS.tmin)+'°C',f(HS.tmax)+'°C']:['ไม่มีข้อมูล SST','–']):lay==='chl'?['0.03','10 mg/m³']:['0 ม.',f(HS.dcap,0)+' ม.'];
  const ex=[];
- if(lay==='score')ex.push('เขียว = ไม่ค่อยมี (<30%) · เขียวอ่อน = พอมี (30–49%) · เหลือง = ปานกลาง (50–64%) · ส้ม = ดี (65–79%) · แดง = โซนน่าลง (80%+) · เส้นเข้ม = ขอบโซน');
+ if(lay==='score')ex.push('เขียว = ไม่ค่อยมี (<30%) · เขียวอ่อน = พอมี (30–49%) · เหลือง = ปานกลาง (50–64%) · ส้ม = ดี (65–79%) · แดง = โซนน่าลง (80%+ และอยู่ในกลุ่ม 15% ที่ดีที่สุดของพื้นที่ที่สแกน; 80%+ ที่เหลือแสดงเป็นสีส้ม) · เส้นเข้ม = ขอบโซน');
  if(lay==='chl')ex.push(G.chlSrc?'แพลงก์ตอน: '+G.chlSrc+' · ไม่มีสี = เมฆบัง':'ไม่มีข้อมูลคลอโรฟิลล์');
  if(lay==='temp'||lay==='score')ex.push('SST ผิวน้ำ: '+G.sstSrc+' · ไม่ใช่อุณหภูมิอากาศ');
  if(!G.have){ex.push('ไม่มีข้อมูลกริดความลึกในตำแหน่งนี้ · ลองค้นหาใหม่เมื่อเครือข่ายพร้อม · ไม่วาดค่าจำลอง');const terrDiag=[TERR15_ERR&&('ETOPO15: '+TERR15_ERR),TERR_ERR&&('ETOPO1 fallback: '+TERR_ERR)].filter(Boolean).join(' | ');if(terrDiag)ex.push('สาเหตุที่โหลดความลึกไม่สำเร็จ: '+terrDiag.slice(0,500));}
@@ -2779,7 +2782,7 @@ async function loadOsmHazards(b,force){
 function drawOsmHazards(){
  if(osmHazLayer){map.removeLayer(osmHazLayer);osmHazLayer=null;}
  if(!$('osmHaz')?.checked||!OSM_HAZ.length)return;
- const lg=L.layerGroup([],{attribution:'สิ่งกีดขวาง © OpenStreetMap contributors (ODbL)'}),rn=L.canvas({padding:.3});
+ const lg=L.layerGroup([],{attribution:'สิ่งกีดขวาง © OpenStreetMap contributors (ODbL)'}),rn=seaRn('osm');
  for(const h of OSM_HAZ.slice(0,1500)){
   const m=L.circleMarker([h.lat,h.lon],{renderer:rn,radius:h.isArea?7:5,weight:2,color:'#fff',fillColor:OSM_HAZ_COLOR[h.kind],fillOpacity:.95});
   m.bindTooltip(`${OSM_HAZ_LABEL[h.kind]}${h.name?' · '+seaEsc(h.name):''}${h.depthM!=null?' · ลึก '+h.depthM+' ม. (ตามแท็ก)':''}${h.waterLevel?' · '+seaEsc(h.waterLevel):''}${h.isArea?' · จุดกึ่งกลางของพื้นที่':''} · OpenStreetMap (ข้อมูลชุมชน ไม่ใช่ ENC)`);
@@ -4003,7 +4006,7 @@ let evLayer=null;
 function drawEvidence(){
  if(evLayer){map.removeLayer(evLayer);evLayer=null}
  if(!$('evid').checked)return;
- const lg=L.layerGroup(),rn=L.canvas({padding:.3});
+ const lg=L.layerGroup(),rn=seaRn('ev');
  SP.forEach(sp=>(OCC[sp.id]||[]).forEach(o=>{
   const m=L.circleMarker([o.lat,o.lon],{renderer:rn,radius:4,weight:1.5,color:'#fff',fillColor:sp.g==='หมึก'?'#ff7f50':'#4f9dff',fillOpacity:.95});
   m.bindTooltip(`พบจริง: ${sp.n} · ${o.y||'ไม่ระบุปี'}${o.m?' เดือน '+o.m:''} · ${o.src}`);lg.addLayer(m);
@@ -5834,13 +5837,13 @@ const SeaProxy=(()=>{
     if(l.value==='score'){l.value='depth';}else{if(!prem()){try{status('🔒 ฮีตแมปสำหรับสมาชิก Premium',true);}catch(_){}return;}l.value='score';}
     try{l.onchange&&l.onchange();}catch(_){}refreshUi();};
    box.querySelector('.htPlay').onclick=()=>{if(HT.play){clearTimeout(HT.play);HT.play=null;box.querySelector('.htPlay').textContent='▶';try{if(selPt)selectPoint(selPt.lat,selPt.lon);}catch(_){}return;}
-    box.querySelector('.htPlay').textContent='⏸';
+    clearTimeout(HT.back);box.querySelector('.htPlay').textContent='⏸';
     // r14.15.41: next frame only after the previous one has been drawn (no pile-up on slow phones)
     // r14.15.57: play ONCE to the last time step and stop (it used to loop forever and kept the map busy),
     // and wait while the user drags/zooms the map
     const stop=()=>{clearTimeout(HT.play);HT.play=null;box.querySelector('.htPlay').textContent='▶';try{if(selPt)selectPoint(selPt.lat,selPt.lon);}catch(_){}};
     const step=()=>{if(!HT.play)return;if(HT.moving){HT.play=setTimeout(step,300);return;}const S=slots();if(!S.length){HT.play=setTimeout(step,800);return;}
-     if(HT.i>=S.length-1){stop();return;}const t0=performance.now();apply(HT.i+1);const took=performance.now()-t0;HT.play=setTimeout(step,Math.max(700,took+500));};
+     if(HT.i>=S.length-1){stop();HT.back=setTimeout(()=>{if(!HT.play&&HT.i>0)apply(0);},1500);return;}const t0=performance.now();apply(HT.i+1);const took=performance.now()-t0;HT.play=setTimeout(step,Math.max(700,took+500));};
     {const S=slots();if(S.length&&HT.i>=S.length-1)HT.i=-1;}  // pressing ▶ at the end starts again from "now"
     HT.play=setTimeout(step,50);};
    try{map.on('movestart zoomstart',()=>{HT.moving=true;});map.on('moveend zoomend',()=>{clearTimeout(HT.mvT);HT.mvT=setTimeout(()=>{HT.moving=false;},400);});}catch(_){}
@@ -5878,9 +5881,9 @@ const SeaProxy=(()=>{
   // r14.15.46: remember the scores of each time step, so going back/replaying is instant
   let mk='';try{mk=[HT.gid||(HT.gid=Math.random()),SP_SEL,TOD,(+MOONILL||0).toFixed(2),ratio.toFixed(3),SP.map(sp=>spActive(sp)?1:0).join('')].join('|');}catch(_){mk='';}
   const hit=mk&&HT.memo&&HT.memo.get(mk);
-  if(hit&&hit.sc.length===G.sc.length){G.sc.set(hit.sc);G.spi.set(hit.spi);window.SEA_SC_PRESET=true;}
+  if(hit&&hit.sc.length===G.sc.length){G.sc.set(hit.sc);G.spi.set(hit.spi);if(hit.r&&G.scR)G.scR.set(hit.r);window.SEA_SC_PRESET=true;}
   render();
-  if(mk&&!hit){const g=G;Promise.resolve(window.SEA_RENDER_DONE).then(()=>{if(g!==G)return;HT.memo=HT.memo||new Map();HT.memo.set(mk,{sc:Float32Array.from(G.sc),spi:Uint8Array.from(G.spi)});while(HT.memo.size>60)HT.memo.delete(HT.memo.keys().next().value);});}
+  if(mk&&!hit){const g=G;Promise.resolve(window.SEA_RENDER_DONE).then(()=>{if(g!==G)return;HT.memo=HT.memo||new Map();HT.memo.set(mk,{sc:Float32Array.from(G.sc),spi:Uint8Array.from(G.spi),r:G.scR?Float32Array.from(G.scR):null});while(HT.memo.size>60)HT.memo.delete(HT.memo.keys().next().value);});}
   // r14.15.47b: while ▶ plays, leave the tapped-point popup alone (no flicker); refresh it once when stopped
   if(!HT.play)setTimeout(()=>{try{if(selPt)selectPoint(selPt.lat,selPt.lon);}catch(_){}},0);
  }
@@ -7318,7 +7321,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.68';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.69';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
