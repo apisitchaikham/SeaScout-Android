@@ -1,11 +1,12 @@
 import { handleApi } from './api/index.js';
 import { autoShopTick } from './api/autoshop.js';
+import { monitorTick, countCrash } from './api/monitor.js';
 
 // Sea Scout website Worker (r14.15.44). Static files are served by Cloudflare directly (free, not counted);
 // this script only runs for paths that are not files: /api/crash (anonymous error reports → Worker logs).
 // r14.15.59: + /api/v1/* central membership API (worker/api/). Inert (503) until a D1 database is bound as DB.
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === '/api/crash') {
       const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
@@ -18,6 +19,8 @@ export default {
         const keep = {};
         for (const k of ['k', 'm', 's', 'src', 'b', 'app', 'lang', 'plat', 'chrome', 'd']) if (k in j) keep[k] = String(j[k]).slice(0, k === 's' ? 2000 : 500);
         console.log(JSON.stringify({ seascout: 'diag', country: (request.cf && request.cf.country) || '', ...keep }));
+        // r14.15.73: also counted per hour for the admin health page (capped; no user data)
+        if (env.DB && ctx) ctx.waitUntil(countCrash(env, keep));
       }
       return new Response(null, { status: 204, headers: cors });
     }
@@ -28,5 +31,7 @@ export default {
   async scheduled(event, env, ctx) {
     if (!env.DB) return;
     ctx.waitUntil(autoShopTick(env).then((r) => console.log(JSON.stringify({ seascout: 'auto_shop', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'auto_shop', error: String(e) }))));
+    // r14.15.73: health snapshot + alerts (same cron)
+    ctx.waitUntil(monitorTick(env).then((r) => console.log(JSON.stringify({ seascout: 'monitor', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'monitor', error: String(e) }))));
   },
 };

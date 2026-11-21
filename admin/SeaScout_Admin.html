@@ -80,7 +80,7 @@ $('#goBtn').onclick=async()=>{
 $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click();};
 function logout(silent){if(!silent&&S.token)api('POST','logout',{}).catch(()=>{});S.token='';sessionStorage.removeItem('ssAdm');$('#login').classList.remove('hide');$('#nav').classList.add('hide');$('#outBtn').classList.add('hide');$('#view').innerHTML='';$('#who').textContent='';}
 $('#outBtn').onclick=()=>logout(false);
-const TABS=[['overview','ภาพรวม'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
+const TABS=[['overview','ภาพรวม'],['health','สุขภาพระบบ'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
 function start(){
  $('#login').classList.add('hide');$('#nav').classList.remove('hide');$('#outBtn').classList.remove('hide');$('#who').textContent=S.email+' · '+S.role;
  $('#nav').innerHTML=TABS.filter(t=>t[0]!=='admins'||can('owner')).map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
@@ -104,6 +104,26 @@ const VIEWS={
    <tr><td>เข้าสู่ระบบด้วย Google</td><td>${yes(o.config.google_signin)}</td></tr><tr><td>Sign in with Apple</td><td>${yes(o.config.apple_signin)}</td></tr><tr><td>เข้าสู่ระบบด้วย Facebook</td><td>${yes(o.config.facebook_signin)}</td></tr>
    <tr><td>อีเมล (ยืนยัน/รีเซ็ตรหัส)</td><td>${yes(o.config.email)}</td></tr><tr><td>Google Play Billing</td><td>${yes(o.config.google_billing)} · RTDN ${yes(o.config.google_rtdn)}</td></tr>
    <tr><td>App Store (StoreKit)</td><td>${yes(o.config.apple_billing)}</td></tr></table><small class="mute">อัปเดต ${dt(o.at)} · วิธีตั้งค่า: docs/API_V1_TH.md</small></div>`;
+ },
+ async health(v){
+  const r=await api('GET','health');const L=r.last,lv={ok:'<span class="ok">🟢 ปกติ</span>',warn:'<span class="warn">🟠 เฝ้าดู</span>',crit:'<span class="bad">🔴 ต้องแก้</span>'};
+  const n=x=>x==null?'—':Number(x).toLocaleString('en-US');const u=L&&L.usage||{};
+  const bar=(x,lim)=>{const p=Math.min(100,Math.round((x||0)/lim*1000)/10);return `<div style="background:#e3eef3;border-radius:6px;height:10px;overflow:hidden"><div style="width:${p}%;height:10px;background:${p>=90?'#c62828':p>=70?'#ef8a00':'#2e9d5b'}"></div></div><small>${n(x)} / ${n(lim)} (${p}%)</small>`;};
+  const usage=!r.setup.usage?`<p class="warn">ยังไม่ได้ตั้ง <code>CF_ACCOUNT_ID</code> + <code>CF_ANALYTICS_TOKEN</code> → ยังไม่มีตัวเลขการใช้งาน (วิธีตั้ง: docs/MONITOR_TH.md)</p>`
+   :u.error?`<p class="bad">อ่านสถิติจาก Cloudflare ไม่ได้: ${esc(u.error)}</p>`
+   :`<table><tr><td>คำขอ Worker ทั้งบัญชี (วันนี้, UTC)</td><td style="width:45%">${bar(u.requests,r.limits.requests)}</td></tr>
+     <tr><td>D1 แถวที่อ่าน</td><td>${bar(u.d1_reads,r.limits.d1_reads)}</td></tr><tr><td>D1 แถวที่เขียน</td><td>${bar(u.d1_writes,r.limits.d1_writes)}</td></tr>
+     <tr><td>CPU เกินโควตา (Error 1102)</td><td class="${u.exceeded?'bad':''}">${n(u.exceeded)} ครั้ง · CPU p99 เว็บ ${n(u.cpu_p99_ms)} ms (ฟรี 10 ms)</td></tr>
+     <tr><td>โค้ดผิดพลาด (Error 1101)</td><td>${n(u.threw)} ครั้ง</td></tr>
+     <tr><td>แยกตาม Worker</td><td>${Object.entries(u.scripts||{}).map(([k,x])=>`<span class="tag">${esc(k)} ${n(x)}</span>`).join(' ')}</td></tr></table>`;
+  const tr=(r.trend||[]).map(t=>`<i title="${esc(dt(t.at))} ${esc(t.level)}" style="display:inline-block;width:8px;height:18px;margin-right:2px;border-radius:2px;background:${t.level==='crit'?'#c62828':t.level==='warn'?'#ef8a00':'#2e9d5b'}"></i>`).join('');
+  v.innerHTML=`<div class="card"><h2>สุขภาพระบบ ${L?lv[L.level]||'':''}</h2><p class="mute">ตรวจอัตโนมัติทุก 30 นาที · ล่าสุด ${L?dt(L.at):'ยังไม่เคยตรวจ'} · แจ้งเตือนทางอีเมล: ${r.setup.email?'<span class="ok">เปิด</span>':'<span class="warn">ยังไม่ตั้ง ALERT_EMAIL</span>'}</p>
+   <div>${tr||'<span class="mute">ยังไม่มีประวัติ 24 ชม.</span>'}</div>${can('admin')?'<p><button class="b p" id="hrun">ตรวจตอนนี้</button></p>':''}</div>
+   <div class="card"><h2>การแจ้งเตือน</h2><table><tr><th>ระดับ</th><th>รายละเอียด</th><th>ตั้งแต่</th></tr>${(r.alerts||[]).map(a=>`<tr><td>${lv[a.level]||esc(a.level)}</td><td>${esc(a.message)}</td><td>${dt(a.since)}</td></tr>`).join('')||'<tr><td class="mute" colspan="3">ยังไม่มี</td></tr>'}</table></div>
+   <div class="card"><h2>การใช้งานเทียบโควตาฟรี</h2>${usage}</div>
+   <div class="card"><h2>เซิร์ฟเวอร์ข้อมูลที่แอปใช้</h2><table>${(L&&L.probes||[]).map(p=>`<tr><td>${esc(p.name)}</td><td>${p.ok?'<span class="ok">✔ ใช้ได้</span>':'<span class="bad">✖ ใช้ไม่ได้</span>'}</td><td>${p.ok?n(p.ms)+' ms':'HTTP '+esc(p.status||p.error||'—')}</td></tr>`).join('')||'<tr><td class="mute">ยังไม่มีข้อมูล</td></tr>'}</table></div>
+   <div class="card"><h2>แอปแครช/ผิดพลาด 24 ชม.</h2><table><tr><th>ครั้ง</th><th>ชนิด · ข้อความ</th><th>ล่าสุด</th><th>ตัวอย่าง</th></tr>${(r.crashes_24h||[]).map(c=>{let s={};try{s=JSON.parse(c.sample||'{}');}catch(_){}return `<tr><td><b>${n(c.n)}</b></td><td>${esc(c.key)}</td><td>${dt(c.last_hour)}</td><td><small class="mute">${esc([s.app,s.plat,s.lang,s.src].filter(Boolean).join(' · '))}</small></td></tr>`;}).join('')||'<tr><td class="mute" colspan="4">ไม่มี 👍</td></tr>'}</table></div>`;
+  const b=$('#hrun');if(b)b.onclick=async()=>{b.disabled=true;b.textContent='กำลังตรวจ…';try{await api('POST','health/run',{});toast('ตรวจเรียบร้อย');show();}catch(e){toast(e.message,true);b.disabled=false;b.textContent='ตรวจตอนนี้';}};
  },
  async members(v){
   v.innerHTML=`<div class="card"><div class="row"><input id="q" placeholder="ค้นหาอีเมล หรือ user id" style="flex:1"><button class="b" id="qb">ค้นหา</button></div><div id="ul"></div></div><div id="ud"></div>`;

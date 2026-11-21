@@ -4,6 +4,7 @@
 import { ApiError, json, readJson, newId, randomToken, sha256, hashPassword, safeEqual, cleanEmail, clientIp, country, str } from './util.js';
 import { audit, rateLimit } from './store.js';
 import { autoShopTick, configured as shopConfigured } from './autoshop.js';
+import { monitorTick, healthView } from './monitor.js';
 
 const ROLE = { viewer: 0, support: 1, admin: 2, owner: 3 };
 const ADMIN_TTL = 2 * 3600e3;
@@ -295,6 +296,15 @@ async function logout(req, env, a) {
   return json(req, 200, { ok: true });
 }
 
+// r14.15.73: system health (usage vs free-plan limits, data servers, app crashes, alerts)
+async function health(req, env) { return json(req, 200, await healthView(env)); }
+async function healthRun(req, env, a) {
+  need(a, 'admin');
+  const r = await monitorTick(env, { force: true });
+  await audit(env.DB, 'admin', a.id, 'health_run', null, { level: r.level }, country(req));
+  return json(req, 200, { run: r, ...(await healthView(env)) });
+}
+
 const R = [
   ['GET', /^overview$/, overview], ['GET', /^users$/, listUsers], ['GET', /^users\/(usr_[\w-]{16})$/, getUser],
   ['POST', /^users\/(usr_[\w-]{16})\/subscriptions$/, grantSub], ['POST', /^users\/(usr_[\w-]{16})\/subscriptions\/(sub_[\w-]{16})\/revoke$/, revokeSub],
@@ -310,6 +320,7 @@ const R = [
   ['POST', /^offers$/, (q, e, a) => upsertOffer(q, e, a, null)], ['PUT', /^offers\/(off_[\w-]{16})$/, upsertOffer], ['DELETE', /^offers\/(off_[\w-]{16})$/, (q, e, a, id) => deleteRow(q, e, a, 'offers', id)],
   ['GET', /^shop$/, shopList], ['POST', /^shop\/run$/, shopRun], ['PUT', /^shop\/queries\/(q_[a-z_]{2,30})$/, shopQuery],
   ['POST', /^shop\/products\/(prd_[\w-]{16})\/block$/, (q, e, a, id) => shopBlock(q, e, a, id, true)], ['POST', /^shop\/products\/(prd_[\w-]{16})\/unblock$/, (q, e, a, id) => shopBlock(q, e, a, id, false)],
+  ['GET', /^health$/, health], ['POST', /^health\/run$/, healthRun],
   ['GET', /^admins$/, adminsList], ['PUT', /^admins$/, adminUpsert], ['POST', /^logout$/, logout],
 ];
 export async function handleAdmin(req, env, sub) {

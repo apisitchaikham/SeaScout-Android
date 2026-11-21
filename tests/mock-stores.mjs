@@ -21,6 +21,23 @@ const send = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'appli
 http.createServer(async (req, res) => {
   let body = ''; for await (const c of req) body += c;
   const u = new URL(req.url, 'http://x');
+  // ---- r14.15.73 monitor: Cloudflare GraphQL Analytics + data-server probes ----
+  if (u.pathname === '/_cf' && req.method === 'POST') { state.cf = JSON.parse(body); return send(res, 200, {}); }
+  if (u.pathname === '/_probe' && req.method === 'POST') { state.probes = { ...(state.probes || {}), ...JSON.parse(body) }; return send(res, 200, {}); }
+  if (u.pathname === '/cfgql') {
+    state.cfCalls = (state.cfCalls || 0) + 1;
+    if (req.headers.authorization !== 'Bearer cf-analytics-test') return send(res, 403, { errors: [{ message: 'not authorized' }] });
+    const q = JSON.parse(body), cf = state.cf || {};
+    state.cfLastVars = q.variables;
+    if (cf.error) return send(res, 200, { data: null, errors: [{ message: cf.error }] });
+    if (!/workersInvocationsAdaptive/.test(q.query) || !/d1AnalyticsAdaptiveGroups/.test(q.query) || q.variables.a !== 'acct-test') return send(res, 400, { errors: [{ message: 'bad query' }] });
+    return send(res, 200, { data: { viewer: { accounts: [{ w: cf.w || [], d: cf.d || [] }] } }, errors: null });
+  }
+  if (u.pathname.startsWith('/probe/')) {
+    const id = u.pathname.slice(7), st = (state.probes || {})[id];
+    if (st === 'down') return send(res, 503, { error: 'down' });
+    res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end(st === 'wrong' ? 'maintenance page' : 'ERDDAP_version=2.29');
+  }
   // ---- affiliate networks (r14.15.68): signatures checked exactly as the Worker makes them ----
   if (u.pathname === '/_shop' && req.method === 'POST') { state.shop = JSON.parse(body); return send(res, 200, {}); }
   if (u.pathname === '/shopee/graphql') {
