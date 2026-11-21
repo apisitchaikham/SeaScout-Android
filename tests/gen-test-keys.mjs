@@ -28,6 +28,8 @@ fs.writeFileSync(devvars, [
   `INVOLVE_API_KEY=${q('iv-key')}`, `INVOLVE_API_SECRET=${q('iv-secret')}`, `INVOLVE_API_URL=${q(mock + '/involve')}`,
   `ADMITAD_CLIENT_ID=${q('ad-client')}`, `ADMITAD_CLIENT_SECRET=${q('ad-secret')}`, `ADMITAD_WEBSITE_ID=${q('777')}`, `ADMITAD_API_URL=${q(mock + '/admitad')}`,
   `AMAZON_TAGS='{"US":"seascout-20"}'`,
+  `STRIPE_SECRET_KEY=${q('sk_test_seascout')}`, `STRIPE_WEBHOOK_SECRET=${q('whsec_test_seascout')}`, `STRIPE_API_URL=${q(mock + '/stripe')}`,
+  `SPONSOR_AI_URL=${q(mock + '/ai')}`, `SAFE_BROWSING_KEY=${q('sb-key')}`, `SAFE_BROWSING_URL=${q(mock + '/sb')}`, `SPONSOR_FETCH_PROXY=${q(mock + '/proxy?u=')}`, `SITE_URL=${q('https://seascout.test')}`,
   `APPLE_BUNDLE_ID=${q(bundle)}`, `APPLE_ISSUER_ID=${q('issuer-1')}`, `APPLE_KEY_ID=${q('KEY123')}`, `APPLE_PRIVATE_KEY=${q(pem(ap.privateKey, 'pkcs8'))}`, `APPLE_API_BASE=${q(mock)}`,
 ].join('\n') + '\n');
 console.log('keys + ' + devvars + ' written');

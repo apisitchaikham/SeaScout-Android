@@ -80,7 +80,7 @@ $('#goBtn').onclick=async()=>{
 $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click();};
 function logout(silent){if(!silent&&S.token)api('POST','logout',{}).catch(()=>{});S.token='';sessionStorage.removeItem('ssAdm');$('#login').classList.remove('hide');$('#nav').classList.add('hide');$('#outBtn').classList.add('hide');$('#view').innerHTML='';$('#who').textContent='';}
 $('#outBtn').onclick=()=>logout(false);
-const TABS=[['overview','ภาพรวม'],['health','สุขภาพระบบ'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['markets','ร้านตามประเทศ'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
+const TABS=[['overview','ภาพรวม'],['health','สุขภาพระบบ'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['markets','ร้านตามประเทศ'],['sponsors','โฆษณาสปอนเซอร์'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
 function start(){
  $('#login').classList.add('hide');$('#nav').classList.remove('hide');$('#outBtn').classList.remove('hide');$('#who').textContent=S.email+' · '+S.role;
  $('#nav').innerHTML=TABS.filter(t=>t[0]!=='admins'||can('owner')).map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
@@ -231,6 +231,33 @@ const VIEWS={
    if(d.ms)go(()=>api('PUT','markets/'+d.ms,{rank:+q(`[data-mr="${d.ms}"]`).value,program_id:q(`[data-mp="${d.ms}"]`).value.trim()||null,search_url:q(`[data-mu="${d.ms}"]`).value.trim()}));
    if(d.mx)go(()=>api('POST','markets/run',{market_id:d.mx}));
    if(d.mo)go(()=>api('PUT','markets/'+d.mo,{active:d.on==='1'}));};
+ },
+ async sponsors(v){
+  const r=await api('GET','sponsors'),S=r.settings,ad=can('admin'),own=can('owner');
+  const ST={checking:['⏳ กำลังตรวจ','warn'],rejected:['✖ ไม่ผ่าน','bad'],awaiting_payment:['💳 รอชำระ','warn'],active:['🟢 แสดงอยู่','ok'],expired:['⌛ หมดอายุ','mute'],suspended:['⛔ ถูกระงับ','bad'],removed:['🗑 นำออก','bad']};
+  const yes=b=>b?'<span class="ok">✔</span>':'<span class="warn">✖</span>';
+  const live=r.ads.filter(a=>a.status==='active');
+  v.innerHTML=`<div class="grid">${kpi(live.length,'โฆษณาที่แสดงอยู่')}${kpi(r.ads.filter(a=>a.status==='awaiting_payment').length,'รอชำระเงิน')}${kpi(r.revenue_30d_thb.toLocaleString()+' ฿','รายได้ 30 วัน')}${kpi(r.payments_30d,'จำนวนการชำระ 30 วัน')}</div>
+   <div class="card"><h2>โฆษณาสปอนเซอร์ (แถบล่างของแอป)</h2>
+   <p class="mute">ร้านค้าอัปโหลดรูป + ลิงก์ร้านเองที่ <a href="https://seascout.apisit-chaikham.workers.dev/advertise.html" target="_blank">/advertise.html</a> → ระบบตรวจอัตโนมัติ (คำต้องห้าม/พนัน, หน้าเว็บของลิงก์, Google Safe Browsing, AI) → ผ่านแล้วชำระผ่าน Stripe → ขึ้นแอปทันที สลับรูปละ ${S.rotate} วินาที · ลิงก์ที่แสดงอยู่ถูกตรวจซ้ำทุก 7 วัน</p>
+   <p>Stripe ${yes(r.setup.stripe)} · AI ตรวจรูป ${yes(r.setup.ai)} · Google Safe Browsing ${yes(r.setup.safe_browsing)} · อีเมลแจ้งร้าน ${yes(r.setup.email)} · สวิตช์ <code>sponsor_ads</code>: ${r.enabled?'<span class="ok">เปิด</span>':'<span class="warn">ปิด</span>'}</p>
+   <div class="row">ราคา <input id="spP" type="number" value="${S.price}" style="width:100px" ${own?'':'disabled'}> บาท ต่อ <input id="spD" type="number" value="${S.days}" style="width:60px" ${own?'':'disabled'}> วัน · สูงสุด <input id="spM" type="number" value="${S.max}" style="width:60px" ${own?'':'disabled'}> เจ้า (0 = ไม่จำกัด) · สลับทุก <input id="spR" type="number" value="${S.rotate}" style="width:60px" ${own?'':'disabled'}> วินาที ${own?'<button class="b p" id="spSave">บันทึก</button>':''}</div>
+   ${ad?'<button class="b" id="spRun">ตรวจงานค้าง/หมดอายุตอนนี้</button>':''}</div>
+   <div class="card"><h2>รายการโฆษณา</h2><table><tr><th>รูป</th><th>ร้าน</th><th>สถานะ</th><th>แสดงถึง</th><th>เห็น / คลิก</th><th>ผลตรวจ</th><th></th></tr>
+   ${r.ads.map(a=>{const s=ST[a.status]||[a.status,''];let c={};try{c=JSON.parse(a.check_json||'{}');}catch(_){}
+    const chk=[c.page?('หน้าเว็บ '+(c.page.ok?'✔':'✖')+(c.page.note?' ('+c.page.note+')':'')):'',c.safe_browsing?('SafeBrowsing '+(c.safe_browsing.skipped?'—':c.safe_browsing.ok?'✔':'✖')):'',c.ai?('AI '+(c.ai.skipped?'—':c.ai.error?'error'+(c.ai.fallback?' → ใช้กฎอย่างเดียว':''):c.ai.ok?'✔':'✖')):'',c.words?('คำต้องห้าม: '+c.words.hit):''].filter(Boolean).join(' · ');
+    return `<tr><td><button class="b" data-si="${esc(a.id)}">ดูรูป</button><div id="im_${esc(a.id)}"></div></td><td><b>${esc(a.business)}</b><br><small><a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">${esc(a.link.slice(0,60))}</a></small><br><small class="mute">${esc(a.email)} · ${esc(a.country||'')} · ${dt(a.created_at)}</small></td>
+     <td class="${s[1]}">${s[0]}${a.reason?`<br><small>${esc(a.reason)}</small>`:''}</td><td>${a.paid_until?dt(a.paid_until):'—'}<br><small class="mute">จ่ายแล้ว ${(a.paid_total/100).toLocaleString()} ฿</small></td><td>${(a.impressions||0).toLocaleString()} / ${(a.clicks||0).toLocaleString()}</td><td><small>${esc(chk)}</small></td>
+     <td>${ad?`${['active','awaiting_payment','checking','expired'].includes(a.status)?`<button class="b d" data-sr="${esc(a.id)}">นำออก</button>`:''} ${['removed','suspended','rejected'].includes(a.status)?`<button class="b" data-ss="${esc(a.id)}">คืนสถานะ</button>`:''} <button class="b" data-sc="${esc(a.id)}">ตรวจใหม่</button> <button class="b" data-se="${esc(a.id)}">+วัน</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="7" class="mute">ยังไม่มีร้านส่งโฆษณา</td></tr>'}</table></div>`;
+  const go=async f=>{try{await f();toast('เรียบร้อย');show();}catch(e){toast(e.message,true);}};
+  const sv=$('#spSave');if(sv)sv.onclick=()=>go(()=>api('PUT','sponsors/settings',{sponsor_price_thb:+$('#spP').value,sponsor_days:+$('#spD').value,sponsor_max:+$('#spM').value,sponsor_rotate_s:+$('#spR').value}));
+  const rn=$('#spRun');if(rn)rn.onclick=()=>go(()=>api('POST','sponsors/run',{}));
+  v.onclick=async e=>{const d=e.target.dataset;
+   if(d.si){try{const x=await api('GET','sponsors/'+d.si+'/image');const box=document.getElementById('im_'+d.si);box.innerHTML=`<img src="${esc(x.image)}" alt="" style="max-width:320px;border-radius:8px;margin-top:6px">`;}catch(err){toast(err.message,true);}}
+   if(d.sr){const why=prompt('เหตุผลที่นำออก (ร้านจะเห็นข้อความนี้)','โฆษณาไม่เป็นไปตามกฎ');if(why!=null)go(()=>api('POST','sponsors/'+d.sr+'/remove',{reason:why}));}
+   if(d.ss&&ask('คืนสถานะโฆษณานี้?'))go(()=>api('POST','sponsors/'+d.ss+'/restore',{}));
+   if(d.sc)go(()=>api('POST','sponsors/'+d.sc+'/recheck',{}));
+   if(d.se){const n=prompt('เพิ่มกี่วัน (เช่น ชดเชยให้ร้าน)','7');if(n)go(()=>api('POST','sponsors/'+d.se+'/extend',{days:+n}));}};
  },
  async commerce(v){
   const r=await api('GET','commerce');const clicks=Object.fromEntries(r.clicks_30d.map(c=>[c.offer_id,c.n]));

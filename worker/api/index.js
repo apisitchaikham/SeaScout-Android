@@ -10,6 +10,7 @@ import { forgot, reset, verifyRequest, verifyConfirm } from './email.js';
 import { googleVerify, googleNotify, appleVerify, appleNotify, billingTokens } from './billing.js';
 import { items as commerceItems, go as commerceGo, catalog as commerceCatalog } from './commerce.js';
 import { handleAdmin } from './admin.js';
+import { submit as spSubmit, status as spStatus, pay as spPay, stripeWebhook, ads as spAds, img as spImg, go as spGo, seen as spSeen } from './sponsors.js';
 
 import { PRIVACY_VERSION_RE, deviceFrom, meBody } from './common.js';
 
@@ -223,6 +224,15 @@ const ROUTES = [
   ['GET', /^\/api\/v1\/commerce\/items$/, commerceItems],
   ['GET', /^\/api\/v1\/commerce\/catalog$/, commerceCatalog],
   ['GET', /^\/api\/v1\/go\/(off_[A-Za-z0-9_-]{16})$/, commerceGo],
+  // r14.15.75: self-serve sponsor banners
+  ['POST', /^\/api\/v1\/sponsor\/submit$/, spSubmit],
+  ['POST', /^\/api\/v1\/sponsor\/status$/, spStatus],
+  ['POST', /^\/api\/v1\/sponsor\/pay$/, spPay],
+  ['POST', /^\/api\/v1\/sponsor\/stripe$/, stripeWebhook],
+  ['GET', /^\/api\/v1\/sponsor\/ads$/, spAds],
+  ['GET', /^\/api\/v1\/sponsor\/img\/(spn_[A-Za-z0-9_-]{16})$/, spImg],
+  ['GET', /^\/api\/v1\/sponsor\/go\/(spn_[A-Za-z0-9_-]{16})$/, spGo],
+  ['POST', /^\/api\/v1\/sponsor\/seen$/, spSeen],
   ['GET', /^\/api\/v1\/flags$/, flags],
   ['GET', /^\/api\/v1\/boot$/, boot],
 ];

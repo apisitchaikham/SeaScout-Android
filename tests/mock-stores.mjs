@@ -21,6 +21,39 @@ const send = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'appli
 http.createServer(async (req, res) => {
   let body = ''; for await (const c of req) body += c;
   const u = new URL(req.url, 'http://x');
+  // ---- r14.15.75 sponsors: shop pages (via proxy), Safe Browsing, Workers AI stand-in, Stripe Checkout ----
+  if (u.pathname === '/proxy') {
+    const target = u.searchParams.get('u') || '', host = (() => { try { return new URL(target).hostname; } catch (_) { return ''; } })();
+    state.pageHits = [...(state.pageHits || []), target];
+    const pages = state.pages || {};
+    const pg = pages[host];
+    if (/facebook\.com$/.test(host)) return send(res, 403, { error: 'login' });
+    if (!pg) { res.writeHead(404, { 'Content-Type': 'text/html' }); return res.end('<title>Not found</title>'); }
+    res.writeHead(pg.status || 200, { 'Content-Type': 'text/html; charset=utf-8', 'x-final-url': pg.final || target });
+    return res.end(pg.html);
+  }
+  if (u.pathname === '/_pages' && req.method === 'POST') { state.pages = { ...(state.pages || {}), ...JSON.parse(body) }; return send(res, 200, {}); }
+  if (u.pathname === '/sb') {
+    if (u.searchParams.get('key') !== 'sb-key') return send(res, 403, {});
+    const j = JSON.parse(body), url = j.threatInfo.threatEntries[0].url;
+    return send(res, 200, /malware/.test(url) ? { matches: [{ threatType: 'MALWARE', threat: { url } }] } : {});
+  }
+  if (u.pathname === '/_ai' && req.method === 'POST') { state.ai = JSON.parse(body); return send(res, 200, {}); }
+  if (u.pathname === '/ai') {
+    const j = JSON.parse(body); state.aiCalls = [...(state.aiCalls || []), j];
+    const a = state.ai || { mode: 'allow' };
+    if (a.mode === 'error') return send(res, 500, { error: 'model busy' });
+    const img = j.messages[1].content.find((c) => c.type === 'image_url');
+    if (!img || !/^data:image\/(webp|png|jpeg);base64,/.test(img.image_url.url)) return send(res, 400, { error: 'no image' });
+    return send(res, 200, { response: a.mode === 'deny' ? 'Verdict: {"allowed": false, "category": "gambling", "reason_th": "รูปโฆษณาเป็นเว็บพนัน"}' : '{"allowed":true,"category":"fishing shop"}' });
+  }
+  if (u.pathname === '/stripe/v1/checkout/sessions') {
+    if (req.headers.authorization !== 'Bearer sk_test_seascout') return send(res, 401, { error: { message: 'bad key' } });
+    const f = Object.fromEntries(new URLSearchParams(body));
+    state.stripe = [...(state.stripe || []), f];
+    const id = 'cs_test_' + state.stripe.length;
+    return send(res, 200, { id, object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/' + id, amount_total: +f['line_items[0][price_data][unit_amount]'], currency: f['line_items[0][price_data][currency]'] });
+  }
   // ---- r14.15.74 market links: Involve Asia + Admitad (shapes as in their publisher API docs) ----
   if (u.pathname === '/involve/authenticate') {
     const f = new URLSearchParams(body);

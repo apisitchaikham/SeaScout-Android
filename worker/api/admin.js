@@ -5,6 +5,8 @@ import { ApiError, json, readJson, newId, randomToken, sha256, hashPassword, saf
 import { audit, rateLimit } from './store.js';
 import { autoShopTick, configured as shopConfigured } from './autoshop.js';
 import { monitorTick, healthView } from './monitor.js';
+import { settings as spSettings, dropAdsCache, sponsorTick } from './sponsors.js';
+import { checkSponsor } from './sponsor_check.js';
 import { marketTick, resetMarketLinks, configured as marketConfigured, searchUrl } from './markets.js';
 
 const ROLE = { viewer: 0, support: 1, admin: 2, owner: 3 };
@@ -363,6 +365,58 @@ async function marketRun(req, env, a) {
   return json(req, 200, out);
 }
 
+// r14.15.75: sponsor banners
+async function sponsorsList(req, env) {
+  const db = env.DB, now = Date.now();
+  const { results } = await db.prepare(`SELECT id, status, business, email, link, headline, reason, check_json, paid_until, paid_total, impressions, clicks, created_at, updated_at, country, image_hash
+    FROM sponsor_ads ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'awaiting_payment' THEN 1 WHEN 'checking' THEN 2 ELSE 3 END, updated_at DESC LIMIT 300`).all();
+  const rev = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS a, COUNT(*) AS n FROM sponsor_payments WHERE status = 'paid' AND paid_at > ?`).bind(now - 30 * 86400e3).first();
+  const flag = await db.prepare(`SELECT enabled FROM feature_flags WHERE key = 'sponsor_ads'`).first();
+  return json(req, 200, { ads: results, settings: await spSettings(db), revenue_30d_thb: Math.round(rev.a / 100), payments_30d: rev.n, enabled: !flag || !!flag.enabled,
+    setup: { stripe: !!(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET), ai: !!(env.AI || env.SPONSOR_AI_URL), safe_browsing: !!env.SAFE_BROWSING_KEY, email: !!(env.RESEND_API_KEY && env.EMAIL_FROM) } });
+}
+async function sponsorImg(req, env, a, id) {
+  const r = await env.DB.prepare('SELECT image_type, image_b64 FROM sponsor_ads WHERE id = ?').bind(id).first();
+  if (!r) throw new ApiError(404, 'not_found');
+  return json(req, 200, { image: `data:${r.image_type};base64,${r.image_b64}` });
+}
+async function sponsorSet(req, env, a, id, action) {
+  need(a, 'admin'); const db = env.DB, b = await readJson(req), now = Date.now();
+  const ad = await db.prepare('SELECT * FROM sponsor_ads WHERE id = ?').bind(id).first();
+  if (!ad) throw new ApiError(404, 'not_found');
+  if (action === 'remove') await db.prepare(`UPDATE sponsor_ads SET status = 'removed', reason = ?, updated_at = ? WHERE id = ?`).bind(str(b.reason, 200) || 'ผู้ดูแลระบบนำโฆษณาออก', now, id).run();
+  else if (action === 'restore') {
+    if (!['removed', 'suspended', 'rejected'].includes(ad.status)) throw new ApiError(409, 'not_removed');
+    const st = ad.paid_until > now ? 'active' : ad.paid_total > 0 ? 'expired' : 'awaiting_payment';
+    await db.prepare('UPDATE sponsor_ads SET status = ?, reason = NULL, checked_at = ?, updated_at = ? WHERE id = ?').bind(st, now, now, id).run();
+  } else if (action === 'recheck') {
+    const r = await checkSponsor(env, ad, { tries: 0 });
+    const st = r.verdict === 'fail' ? (ad.status === 'active' ? 'suspended' : 'rejected') : ad.status === 'checking' || ad.status === 'rejected' ? (r.verdict === 'pass' ? 'awaiting_payment' : 'checking') : ad.status;
+    await db.prepare('UPDATE sponsor_ads SET status = ?, reason = ?, check_json = ?, checked_at = ?, updated_at = ? WHERE id = ?').bind(st, r.verdict === 'fail' ? r.reason : null, JSON.stringify(r.detail || {}), now, now, id).run();
+  } else if (action === 'extend') {
+    const days = Math.max(1, Math.min(366, parseInt(b.days, 10) || 0));
+    if (!days) throw new ApiError(400, 'days_required');
+    await db.prepare(`UPDATE sponsor_ads SET status = 'active', paid_until = ?, updated_at = ? WHERE id = ?`).bind(Math.max(now, ad.paid_until) + days * 86400e3, now, id).run();
+  }
+  dropAdsCache();
+  await audit(db, 'admin', a.id, 'sponsor_' + action, id, b && b.reason ? { reason: str(b.reason, 200) } : b && b.days ? { days: b.days } : null, country(req));
+  return json(req, 200, { ok: true });
+}
+async function sponsorSettings(req, env, a) {
+  need(a, 'owner'); const db = env.DB, b = await readJson(req), out = {};
+  const lim = { sponsor_price_thb: [100, 1000000], sponsor_days: [1, 366], sponsor_max: [0, 100], sponsor_rotate_s: [3, 60] };
+  for (const [k, [lo, hi]] of Object.entries(lim)) {
+    if (b[k] === undefined) continue;
+    const v = parseInt(b[k], 10);
+    if (!Number.isFinite(v) || v < lo || v > hi) throw new ApiError(400, 'invalid_' + k);
+    await db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(k, String(v)).run(); out[k] = v;
+  }
+  dropAdsCache();
+  await audit(db, 'admin', a.id, 'sponsor_settings', null, out, country(req));
+  return json(req, 200, { ok: true, settings: await spSettings(db) });
+}
+async function sponsorRun(req, env, a) { need(a, 'admin'); return json(req, 200, await sponsorTick(env)); }
+
 const R = [
   ['GET', /^overview$/, overview], ['GET', /^users$/, listUsers], ['GET', /^users\/(usr_[\w-]{16})$/, getUser],
   ['POST', /^users\/(usr_[\w-]{16})\/subscriptions$/, grantSub], ['POST', /^users\/(usr_[\w-]{16})\/subscriptions\/(sub_[\w-]{16})\/revoke$/, revokeSub],
@@ -379,6 +433,9 @@ const R = [
   ['GET', /^shop$/, shopList], ['POST', /^shop\/run$/, shopRun], ['PUT', /^shop\/queries\/(q_[a-z_]{2,30})$/, shopQuery],
   ['POST', /^shop\/products\/(prd_[\w-]{16})\/block$/, (q, e, a, id) => shopBlock(q, e, a, id, true)], ['POST', /^shop\/products\/(prd_[\w-]{16})\/unblock$/, (q, e, a, id) => shopBlock(q, e, a, id, false)],
   ['GET', /^markets$/, marketsList], ['POST', /^markets\/run$/, marketRun], ['PUT', /^markets\/([a-z0-9_]{2,30})$/, marketPut], ['PUT', /^market-keywords\/([a-z0-9_]{2,24})\/([a-z]{2,5})$/, keywordPut],
+  ['GET', /^sponsors$/, sponsorsList], ['PUT', /^sponsors\/settings$/, sponsorSettings], ['POST', /^sponsors\/run$/, sponsorRun],
+  ['GET', /^sponsors\/(spn_[\w-]{16})\/image$/, sponsorImg],
+  ['POST', /^sponsors\/(spn_[\w-]{16})\/(remove|restore|recheck|extend)$/, sponsorSet],
   ['GET', /^health$/, health], ['POST', /^health\/run$/, healthRun],
   ['GET', /^admins$/, adminsList], ['PUT', /^admins$/, adminUpsert], ['POST', /^logout$/, logout],
 ];

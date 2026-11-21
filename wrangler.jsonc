@@ -17,6 +17,8 @@
   "keep_vars": true,
   // r14.15.68: one cron (free plan allows 5) — fills the shop from affiliate APIs, one search per run
   "triggers": { "crons": ["*/30 * * * *"] },
+  // r14.15.75: Workers AI (free 10,000 neurons/day) — checks sponsor banners
+  "ai": { "binding": "AI" },
   "d1_databases": [
     { "binding": "DB", "database_name": "seascout-db", "database_id": "750cb03b-b883-481c-941a-2acfd322fe73", "migrations_dir": "migrations" }
   ]
