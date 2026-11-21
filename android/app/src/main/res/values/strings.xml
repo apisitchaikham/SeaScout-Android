@@ -7,6 +7,6 @@
     <string name="capacitor_background_geolocation_notification_channel_name">GPS (screen off)</string>
     <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_sea</string>
     <string name="capacitor_background_geolocation_notification_color">#0B84A5</string>
-    <!-- AdMob application ID (Google sample ID until the real one is set; r14.15.77) -->
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <!-- AdMob application ID (Sea Scout Android, set r14.15.78) -->
+    <string name="admob_app_id">ca-app-pub-9645418222685863~1715189612</string>
 </resources>
