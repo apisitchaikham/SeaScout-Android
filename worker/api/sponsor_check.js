@@ -89,16 +89,22 @@ const AI_SYSTEM = 'You review advertising banners for a marine navigation and fi
 
 export function parseVerdict(out) {
   const txt = typeof out === 'string' ? out : out && (out.response ?? (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) ?? out.result?.response);
-  if (txt && typeof txt === 'object' && 'allowed' in txt) return txt;
-  const m = String(txt || '').match(/\{[\s\S]*\}/);
-  if (!m) return null;
-  try { const j = JSON.parse(m[0]); return typeof j.allowed === 'boolean' ? j : null; } catch (_) { return null; }
+  if (txt && typeof txt === 'object' && typeof txt.allowed === 'boolean') return txt;
+  // models differ in where they put the text (response / choices / content parts / reasoning): find the verdict object anywhere
+  const all = typeof out === 'string' ? out : JSON.stringify(out == null ? '' : out);
+  const cands = [String(typeof txt === 'string' ? txt : ''), all.replace(/\\"/g, '"')];
+  for (const c of cands) {
+    const ms = c.match(/\{[^{}]*"allowed"\s*:\s*(true|false)[^{}]*\}/g);
+    if (!ms) continue;
+    for (const m of ms.reverse()) { try { const j = JSON.parse(m); if (typeof j.allowed === 'boolean') return j; } catch (_) {} }
+  }
+  return null;
 }
 
 async function aiCheck(env, ad, page) {
   const user = `Shop name: ${ad.business}\nHeadline: ${ad.headline || '-'}\nLink: ${ad.link}\nLinked page title: ${page.title || '-'}\nLinked page text (start): ${(page.excerpt || '').slice(0, 1200)}\nThe banner image is attached.`;
   const input = { messages: [{ role: 'system', content: AI_SYSTEM },
-    { role: 'user', content: [{ type: 'text', text: user }, { type: 'image_url', image_url: { url: `data:${ad.image_type};base64,${ad.image_b64}` } }] }], max_tokens: 160, temperature: 0 };
+    { role: 'user', content: [{ type: 'text', text: user }, { type: 'image_url', image_url: { url: `data:${ad.image_type};base64,${ad.image_b64}` } }] }], max_tokens: 600, temperature: 0 };
   let out;
   if (env.SPONSOR_AI_URL) {   // tests: an HTTP stand-in for env.AI
     const r = await fetch(env.SPONSOR_AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(20000) });
@@ -108,7 +114,7 @@ async function aiCheck(env, ad, page) {
     out = await env.AI.run(env.SPONSOR_AI_MODEL || '@cf/google/gemma-4-26b-a4b-it', input);
   } else return { ok: true, skipped: 'no_ai' };
   const v = parseVerdict(out);
-  if (!v) throw new Error('ai: no verdict');
+  if (!v) throw new Error('ai: no verdict: ' + JSON.stringify(out).slice(0, 260));
   return v.allowed ? { ok: true, category: v.category || '' } : { ok: false, reason: 'ระบบ AI พบว่าโฆษณาไม่เป็นไปตามกฎ' + (v.reason_th ? `: ${String(v.reason_th).slice(0, 140)}` : ''), category: v.category || '' };
 }
 
