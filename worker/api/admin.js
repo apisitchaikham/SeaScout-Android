@@ -5,6 +5,7 @@ import { ApiError, json, readJson, newId, randomToken, sha256, hashPassword, saf
 import { audit, rateLimit } from './store.js';
 import { autoShopTick, configured as shopConfigured } from './autoshop.js';
 import { monitorTick, healthView } from './monitor.js';
+import { marketTick, resetMarketLinks, configured as marketConfigured, searchUrl } from './markets.js';
 
 const ROLE = { viewer: 0, support: 1, admin: 2, owner: 3 };
 const ADMIN_TTL = 2 * 3600e3;
@@ -305,6 +306,63 @@ async function healthRun(req, env, a) {
   return json(req, 200, { run: r, ...(await healthView(env)) });
 }
 
+// r14.15.74: country → marketplaces (the intermediary)
+async function marketsList(req, env) {
+  const db = env.DB;
+  const { results: markets } = await db.prepare('SELECT * FROM marketplaces ORDER BY country, rank, id').all();
+  const { results: keywords } = await db.prepare('SELECT * FROM market_keywords ORDER BY id, lang').all();
+  const { results: clicks } = await db.prepare(`SELECT p.query_id AS market, COUNT(*) AS n FROM affiliate_clicks c JOIN products p ON p.id = c.product_id
+    WHERE p.source = 'market' AND c.at > ? GROUP BY p.query_id`).bind(Date.now() - 30 * 86400e3).all();
+  const flag = await db.prepare(`SELECT enabled FROM feature_flags WHERE key = 'market_links'`).first();
+  return json(req, 200, { markets, keywords, clicks_30d: clicks, enabled: !!(flag && flag.enabled),
+    networks: Object.fromEntries(Object.keys(marketConfigured).map((n) => [n, marketConfigured[n](env)])) });
+}
+async function marketPut(req, env, a, id) {
+  need(a, 'admin'); const db = env.DB, b = await readJson(req);
+  const m = await db.prepare('SELECT * FROM marketplaces WHERE id = ?').bind(id).first();
+  if (!m) throw new ApiError(404, 'not_found');
+  const v = {
+    active: b.active === undefined ? m.active : b.active ? 1 : 0,
+    rank: b.rank === undefined ? m.rank : Math.max(1, Math.min(9, parseInt(b.rank, 10) || 1)),
+    search_url: b.search_url === undefined ? m.search_url : (str(b.search_url, 300) || ''),
+    advertiser: b.advertiser === undefined ? m.advertiser : str(b.advertiser, 60),
+    program_id: b.program_id === undefined ? m.program_id : (str(b.program_id, 60) || null),
+    lang: b.lang === undefined ? m.lang : (/^[a-z]{2,5}$/.test(String(b.lang)) ? String(b.lang) : m.lang),
+  };
+  if (!/^https:\/\/[^\s]+$/.test(v.search_url) || !/\{qh?\}/.test(v.search_url) || !searchUrl(v.search_url, 'test')) throw new ApiError(400, 'invalid_url', 'https://… with {q} or {qh}');
+  if (!v.advertiser) throw new ApiError(400, 'advertiser_required');
+  await db.prepare('UPDATE marketplaces SET active=?, rank=?, search_url=?, advertiser=?, program_id=?, lang=? WHERE id=?').bind(v.active, v.rank, v.search_url, v.advertiser, v.program_id, v.lang, id).run();
+  // switching a shop off hides its links at once; on again shows them again (admin-blocked items stay blocked)
+  if (v.active !== m.active) await db.prepare(v.active
+    ? `UPDATE products SET active = 1, off_reason = NULL WHERE source = 'market' AND query_id = ? AND off_reason = 'market_off'`
+    : `UPDATE products SET active = 0, off_reason = 'market_off' WHERE source = 'market' AND query_id = ? AND off_reason IS NULL`).bind(id).run();
+  if (v.rank !== m.rank) await db.prepare(`UPDATE products SET sort = ? WHERE source = 'market' AND query_id = ?`).bind(1000 + v.rank, id).run();
+  if (v.search_url !== m.search_url || v.program_id !== m.program_id || v.advertiser !== m.advertiser || v.lang !== m.lang) {
+    if (v.advertiser !== m.advertiser && b.program_id === undefined) await db.prepare('UPDATE marketplaces SET program_id = NULL WHERE id = ?').bind(id).run();
+    await resetMarketLinks(db, id);
+  }
+  await audit(db, 'admin', a.id, 'market_update', id, v, country(req));
+  return json(req, 200, { ok: true });
+}
+async function keywordPut(req, env, a, id, lang) {
+  need(a, 'admin'); const db = env.DB, b = await readJson(req);
+  const kw = str(b.keyword, 80);
+  if (!kw) throw new ApiError(400, 'keyword_required');
+  const row = await db.prepare('SELECT tags FROM market_keywords WHERE id = ? LIMIT 1').bind(id).first();
+  if (!row) throw new ApiError(404, 'not_found');
+  await db.prepare('INSERT INTO market_keywords (id, lang, keyword, tags) VALUES (?,?,?,?) ON CONFLICT(id, lang) DO UPDATE SET keyword = excluded.keyword').bind(id, lang, kw, row.tags).run();
+  // every shop searching in this language makes that link again
+  await db.prepare(`UPDATE products SET refreshed_at = 0 WHERE source = 'market' AND ext_id LIKE ? AND query_id IN (SELECT id FROM marketplaces WHERE lang = ? OR ? = 'en')`).bind('%:' + id, lang, lang).run();
+  await audit(db, 'admin', a.id, 'market_keyword', id + '/' + lang, { keyword: kw }, country(req));
+  return json(req, 200, { ok: true });
+}
+async function marketRun(req, env, a) {
+  need(a, 'admin'); const b = await readJson(req);
+  const out = await marketTick(env, { force: true, marketId: b.market_id ? str(b.market_id, 40) : null });
+  await audit(env.DB, 'admin', a.id, 'market_run', b.market_id || '', out, country(req));
+  return json(req, 200, out);
+}
+
 const R = [
   ['GET', /^overview$/, overview], ['GET', /^users$/, listUsers], ['GET', /^users\/(usr_[\w-]{16})$/, getUser],
   ['POST', /^users\/(usr_[\w-]{16})\/subscriptions$/, grantSub], ['POST', /^users\/(usr_[\w-]{16})\/subscriptions\/(sub_[\w-]{16})\/revoke$/, revokeSub],
@@ -320,6 +378,7 @@ const R = [
   ['POST', /^offers$/, (q, e, a) => upsertOffer(q, e, a, null)], ['PUT', /^offers\/(off_[\w-]{16})$/, upsertOffer], ['DELETE', /^offers\/(off_[\w-]{16})$/, (q, e, a, id) => deleteRow(q, e, a, 'offers', id)],
   ['GET', /^shop$/, shopList], ['POST', /^shop\/run$/, shopRun], ['PUT', /^shop\/queries\/(q_[a-z_]{2,30})$/, shopQuery],
   ['POST', /^shop\/products\/(prd_[\w-]{16})\/block$/, (q, e, a, id) => shopBlock(q, e, a, id, true)], ['POST', /^shop\/products\/(prd_[\w-]{16})\/unblock$/, (q, e, a, id) => shopBlock(q, e, a, id, false)],
+  ['GET', /^markets$/, marketsList], ['POST', /^markets\/run$/, marketRun], ['PUT', /^markets\/([a-z0-9_]{2,30})$/, marketPut], ['PUT', /^market-keywords\/([a-z0-9_]{2,24})\/([a-z]{2,5})$/, keywordPut],
   ['GET', /^health$/, health], ['POST', /^health\/run$/, healthRun],
   ['GET', /^admins$/, adminsList], ['PUT', /^admins$/, adminUpsert], ['POST', /^logout$/, logout],
 ];

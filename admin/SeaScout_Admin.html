@@ -80,7 +80,7 @@ $('#goBtn').onclick=async()=>{
 $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#goBtn').click();};
 function logout(silent){if(!silent&&S.token)api('POST','logout',{}).catch(()=>{});S.token='';sessionStorage.removeItem('ssAdm');$('#login').classList.remove('hide');$('#nav').classList.add('hide');$('#outBtn').classList.add('hide');$('#view').innerHTML='';$('#who').textContent='';}
 $('#outBtn').onclick=()=>logout(false);
-const TABS=[['overview','ภาพรวม'],['health','สุขภาพระบบ'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
+const TABS=[['overview','ภาพรวม'],['health','สุขภาพระบบ'],['members','สมาชิก'],['traffic','API & ระบบ'],['flags','เปิด/ปิดฟังก์ชัน'],['plans','แพ็กเกจ & Store'],['autoshop','สินค้าอัตโนมัติ'],['markets','ร้านตามประเทศ'],['commerce','สินค้า & Affiliate'],['payments','การชำระเงิน'],['logs','Logs & ความปลอดภัย'],['admins','ผู้ดูแล']];
 function start(){
  $('#login').classList.add('hide');$('#nav').classList.remove('hide');$('#outBtn').classList.remove('hide');$('#who').textContent=S.email+' · '+S.role;
  $('#nav').innerHTML=TABS.filter(t=>t[0]!=='admins'||can('owner')).map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
@@ -200,6 +200,37 @@ const VIEWS={
    if(d.qr)go(()=>api('POST','shop/run',{query_id:d.qr}));
    if(d.bl)go(()=>api('POST','shop/products/'+d.bl+'/block',{}));
    if(d.ub)go(()=>api('POST','shop/products/'+d.ub+'/unblock',{}));};
+ },
+ async markets(v){
+  const r=await api('GET','markets');const net=n=>r.networks[n]?'<span class="ok">ใส่คีย์แล้ว</span>':'<span class="warn">ยังไม่ใส่คีย์</span>';
+  const clk=Object.fromEntries((r.clicks_30d||[]).map(c=>[c.market,c.n]));
+  const stx=m=>!m.status?'<span class="mute">ยังไม่เคยทำ</span>':m.status==='ok'?'<span class="ok">พร้อม</span>':m.status==='waiting_keys'?'<span class="warn">รอคีย์</span>':m.status==='program_not_found'?'<span class="warn">ยังไม่ได้เข้าร่วมร้านนี้ในเครือข่าย</span>':m.status==='no_tag_for_country'?'<span class="warn">ยังไม่มี Amazon tag ประเทศนี้</span>':`<span class="bad">${esc(m.status)}</span>`;
+  const byCc={};r.markets.forEach(m=>(byCc[m.country]=byCc[m.country]||[]).push(m));
+  const kwIds=[...new Set(r.keywords.map(k=>k.id))],langs=[...new Set(r.keywords.map(k=>k.lang))];
+  const kwv=(id,l)=>(r.keywords.find(k=>k.id===id&&k.lang===l)||{}).keyword||'';
+  const ad=can('admin');
+  v.innerHTML=`<div class="card"><h2>ร้านตามประเทศ (ตัวกลาง)</h2>
+   <p class="mute">ผู้ใช้แต่ละประเทศจะเห็นปุ่ม “🔎 ค้นหาใน &lt;ร้าน&gt;” ของร้านที่คนประเทศนั้นใช้มากที่สุด (ลำดับ 1 ขึ้นก่อน) · ระบบสร้างลิงก์ Affiliate ไปหน้าค้นหาของร้านเอง ครั้งละ 1 ร้านทุก 30 นาที · ประเทศที่ไม่มีในตารางจะเห็นสินค้า AliExpress ตามเดิม</p>
+   <p>Involve Asia: ${net('involve')} · Admitad: ${net('admitad')} · Amazon Associates: ${net('amazon')} · สวิตช์ <code>market_links</code>: ${r.enabled?'<span class="ok">เปิด</span>':'<span class="warn">ปิด (เปิดที่แท็บ เปิด/ปิดฟังก์ชัน)</span>'}</p>
+   ${ad?'<button class="b p" id="mrun">ทำลิงก์ตอนนี้ (1 ร้าน)</button>':''}</div>
+   <div class="card"><h2>ร้านในแต่ละประเทศ</h2><table><tr><th>ประเทศ</th><th>ลำดับ</th><th>ร้าน</th><th>เครือข่าย · โปรแกรม</th><th>ลิงก์</th><th>คลิก 30 วัน</th><th>สถานะ</th><th></th></tr>
+   ${Object.keys(byCc).sort().map(cc=>byCc[cc].map((m,i)=>`<tr><td>${i?'':'<b>'+esc(cc)+'</b>'}</td><td>${ad?`<input data-mr="${esc(m.id)}" type="number" min="1" max="9" value="${m.rank}" style="width:46px">`:m.rank}</td>
+    <td>${esc(m.name)} <small class="mute">${esc(m.lang)}</small>${m.active?'':' <span class="bad">ปิด</span>'}</td><td>${esc(m.network)} · <input data-mp="${esc(m.id)}" value="${esc(m.program_id||'')}" placeholder="หาเอง" style="width:90px" ${ad?'':'disabled'}></td>
+    <td>${m.links}</td><td>${clk[m.id]||0}</td><td>${stx(m)}<br><small class="mute">${m.checked_at?dt(m.checked_at):''}</small></td>
+    <td>${ad?`<button class="b" data-ms="${esc(m.id)}">บันทึก</button> <button class="b" data-mx="${esc(m.id)}">ทำลิงก์</button> <button class="b ${m.active?'d':''}" data-mo="${esc(m.id)}" data-on="${m.active?0:1}">${m.active?'ปิด':'เปิด'}</button>`:''}</td></tr>
+    ${ad?`<tr><td></td><td colspan="7"><input data-mu="${esc(m.id)}" value="${esc(m.search_url)}" style="width:100%"></td></tr>`:''}`).join('')).join('')}</table>
+   <p class="mute">ลิงก์ค้นหา: ใช้ {q} แทนคำค้น (หรือ {qh} = คำค้นต่อด้วย -) · เว้นช่องโปรแกรมว่างไว้ ระบบจะหาโปรแกรมของร้านนั้นในเครือข่ายเอง (ต้องกดเข้าร่วมร้านนั้นในเครือข่ายก่อน)</p></div>
+   <div class="card"><h2>คำค้นอุปกรณ์ (ตามภาษาของร้าน)</h2><table><tr><th>ประเภท</th>${langs.map(l=>`<th>${esc(l)}</th>`).join('')}<th></th></tr>
+   ${kwIds.map(id=>`<tr><td><b>${esc(id)}</b></td>${langs.map(l=>`<td><input data-kw="${esc(id)}|${esc(l)}" value="${esc(kwv(id,l))}" style="width:130px" ${ad?'':'disabled'}></td>`).join('')}<td></td></tr>`).join('')}</table>
+   ${ad?'<button class="b p" id="kws">บันทึกคำค้นที่แก้</button>':''}</div>`;
+  if(!ad)return;
+  const go=async(f)=>{try{const x=await f();if(x&&x.skipped)toast('ข้าม: '+x.skipped,true);else if(x&&x.error)toast(x.error,true);else toast('เรียบร้อย');show();}catch(e){toast(e.message==='invalid_url'?'ลิงก์ค้นหาต้องเป็น https:// และมี {q} หรือ {qh}':e.message,true);}};
+  $('#mrun').onclick=()=>go(()=>api('POST','markets/run',{}));
+  $('#kws').onclick=()=>go(async()=>{let n=0;for(const i of v.querySelectorAll('[data-kw]')){const[id,l]=i.dataset.kw.split('|');if(i.value.trim()&&i.value.trim()!==kwv(id,l)){await api('PUT',`market-keywords/${id}/${l}`,{keyword:i.value.trim()});n++;}}return{ok:n};});
+  v.onclick=e=>{const d=e.target.dataset,q=s=>v.querySelector(s);
+   if(d.ms)go(()=>api('PUT','markets/'+d.ms,{rank:+q(`[data-mr="${d.ms}"]`).value,program_id:q(`[data-mp="${d.ms}"]`).value.trim()||null,search_url:q(`[data-mu="${d.ms}"]`).value.trim()}));
+   if(d.mx)go(()=>api('POST','markets/run',{market_id:d.mx}));
+   if(d.mo)go(()=>api('PUT','markets/'+d.mo,{active:d.on==='1'}));};
  },
  async commerce(v){
   const r=await api('GET','commerce');const clicks=Object.fromEntries(r.clicks_30d.map(c=>[c.offer_id,c.n]));

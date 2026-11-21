@@ -21,6 +21,40 @@ const send = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'appli
 http.createServer(async (req, res) => {
   let body = ''; for await (const c of req) body += c;
   const u = new URL(req.url, 'http://x');
+  // ---- r14.15.74 market links: Involve Asia + Admitad (shapes as in their publisher API docs) ----
+  if (u.pathname === '/involve/authenticate') {
+    const f = new URLSearchParams(body);
+    return f.get('key') === 'iv-key' && f.get('secret') === 'iv-secret' ? send(res, 200, { status: 'success', message: 'ok', data: { token: 'iv-tok' } }) : send(res, 401, { status: 'error', message: 'Invalid key' });
+  }
+  if (u.pathname.startsWith('/involve/')) {
+    if (req.headers.authorization !== 'Bearer iv-tok') return send(res, 401, { status: 'error', message: 'Unauthorized' });
+    const f = new URLSearchParams(body);
+    if (u.pathname === '/involve/offers/all') {
+      state.ivOffers = (state.ivOffers || 0) + 1;
+      const all = [{ offer_id: 101, offer_name: 'Shopee TH' }, { offer_id: 102, offer_name: 'Lazada (Thailand)' }, { offer_id: 103, offer_name: 'Lazada Malaysia' }, { offer_id: 104, offer_name: 'Shopee MY' }, { offer_id: 105, offer_name: 'Shopee VN CPS' }, { offer_id: 106, offer_name: 'Shopee Vietnam' }];
+      const q = (f.get('filters[offer_name]') || '').toLowerCase();
+      if (f.get('filters[application_status]') !== 'Approved') return send(res, 400, { status: 'error' });
+      const data = all.filter((o) => o.offer_name.toLowerCase().includes(q));
+      return send(res, 200, { status: 'success', data: { page: 1, limit: 100, count: data.length, nextPage: null, data } });
+    }
+    if (u.pathname === '/involve/deeplink/generate') {
+      state.ivLinks = [...(state.ivLinks || []), { offer_id: f.get('offer_id'), url: f.get('url') }];
+      if (!/^https:\/\/(shopee|www\.lazada)/.test(f.get('url') || '')) return send(res, 500, { status: 'error', message: 'url not whitelisted' });
+      return send(res, 200, { status: 'success', data: { offer_id: +f.get('offer_id'), tracking_link: 'https://invol.co/cl' + state.ivLinks.length + '?url=' + encodeURIComponent(f.get('url')) } });
+    }
+  }
+  if (u.pathname === '/admitad/token/') {
+    const f = new URLSearchParams(body);
+    const ok = req.headers.authorization === 'Basic ' + Buffer.from('ad-client:ad-secret').toString('base64') && f.get('grant_type') === 'client_credentials' && /deeplink_generator/.test(f.get('scope') || '');
+    return ok ? send(res, 200, { access_token: 'ad-tok', token_type: 'bearer', expires_in: 604800 }) : send(res, 401, { error: 'invalid_client' });
+  }
+  if (u.pathname.startsWith('/admitad/')) {
+    if (req.headers.authorization !== 'Bearer ad-tok') return send(res, 401, { error: 'unauthorized' });
+    if (u.pathname === '/admitad/advcampaigns/website/777/') return send(res, 200, { results: [
+      { id: 501, name: 'Mercado Libre MX', regions: [{ region: 'MX' }] }, { id: 502, name: 'Mercado Libre AR', regions: [{ region: 'AR' }] }, { id: 600, name: 'AliExpress WW', regions: [] }] });
+    const m = u.pathname.match(/^\/admitad\/deeplink\/777\/advcampaign\/(\d+)\/$/);
+    if (m) { const ulps = u.searchParams.getAll('ulp'); state.adCalls = (state.adCalls || 0) + 1; return send(res, 200, ulps.map((x) => ({ link: `https://ad.admitad.com/g/${m[1]}/?subid=${u.searchParams.get('subid')}&ulp=${encodeURIComponent(x)}`, is_affiliate_product: true }))); }
+  }
   // ---- r14.15.73 monitor: Cloudflare GraphQL Analytics + data-server probes ----
   if (u.pathname === '/_cf' && req.method === 'POST') { state.cf = JSON.parse(body); return send(res, 200, {}); }
   if (u.pathname === '/_probe' && req.method === 'POST') { state.probes = { ...(state.probes || {}), ...JSON.parse(body) }; return send(res, 200, {}); }

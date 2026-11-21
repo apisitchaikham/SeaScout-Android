@@ -25,6 +25,9 @@ fs.writeFileSync(devvars, [
   `ALIEXPRESS_APP_KEY=${q('ae-key-1')}`, `ALIEXPRESS_APP_SECRET=${q('ae-secret')}`, `ALIEXPRESS_TRACKING_ID=${q('seascout')}`, `ALIEXPRESS_API_URL=${q(mock + '/aliexpress/sync')}`,
   `CF_ACCOUNT_ID=${q('acct-test')}`, `CF_ANALYTICS_TOKEN=${q('cf-analytics-test')}`, `CF_GRAPHQL_URL=${q(mock + '/cfgql')}`, `ALERT_EMAIL=${q('ops@example.com')}`,
   `MONITOR_PROBES='${JSON.stringify([{ id: 'pa', name: 'Probe A', url: mock + '/probe/pa', expect: 'ERDDAP_version' }, { id: 'pb', name: 'Probe B', url: mock + '/probe/pb', expect: 'ERDDAP_version' }])}'`,
+  `INVOLVE_API_KEY=${q('iv-key')}`, `INVOLVE_API_SECRET=${q('iv-secret')}`, `INVOLVE_API_URL=${q(mock + '/involve')}`,
+  `ADMITAD_CLIENT_ID=${q('ad-client')}`, `ADMITAD_CLIENT_SECRET=${q('ad-secret')}`, `ADMITAD_WEBSITE_ID=${q('777')}`, `ADMITAD_API_URL=${q(mock + '/admitad')}`,
+  `AMAZON_TAGS='{"US":"seascout-20"}'`,
   `APPLE_BUNDLE_ID=${q(bundle)}`, `APPLE_ISSUER_ID=${q('issuer-1')}`, `APPLE_KEY_ID=${q('KEY123')}`, `APPLE_PRIVATE_KEY=${q(pem(ap.privateKey, 'pkcs8'))}`, `APPLE_API_BASE=${q(mock)}`,
 ].join('\n') + '\n');
 console.log('keys + ' + devvars + ' written');

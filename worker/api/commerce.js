@@ -47,7 +47,9 @@ export async function catalog(req, env) {
   const key = cc + '|' + (lang || ''), hit = CAT_CACHE.get(key);
   if (hit && Date.now() - hit.at < 300e3) return json(req, 200, hit.body, { 'Cache-Control': 'public, max-age=300' });
   const { results: prods } = await db.prepare(
-    `SELECT id, title, title_i18n, description, desc_i18n, brand, tags, sort, source, rating, rating_scale, sales FROM products WHERE active = 1 ORDER BY sort, updated_at DESC LIMIT 500`).all();
+    `SELECT p.id, p.title, p.title_i18n, p.description, p.desc_i18n, p.brand, p.tags, p.sort, p.source, p.rating, p.rating_scale, p.sales FROM products p
+     WHERE p.active = 1 AND EXISTS (SELECT 1 FROM offers o JOIN merchants m ON m.id = o.merchant_id WHERE o.product_id = p.id AND o.active = 1 AND m.active = 1 AND (o.country = ? OR o.country = '*'))
+     ORDER BY p.sort, p.updated_at DESC LIMIT 500`).bind(cc).all();   // r14.15.74: only products sold in this country (market links are per country)
   let items = [];
   if (prods.length) {
     const { results: imgs } = await db.prepare(`SELECT i.product_id, i.url, i.alt FROM product_images i JOIN products p ON p.id = i.product_id WHERE p.active = 1 ORDER BY i.sort`).all();
