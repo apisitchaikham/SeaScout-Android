@@ -5,7 +5,7 @@ import { ApiError, json, readJson, newId, randomToken, sha256, hashPassword, saf
 import { audit, rateLimit } from './store.js';
 import { autoShopTick, configured as shopConfigured } from './autoshop.js';
 import { monitorTick, healthView } from './monitor.js';
-import { settings as spSettings, dropAdsCache, sponsorTick } from './sponsors.js';
+import { settings as spSettings, gadSettings, dropAdsCache, sponsorTick } from './sponsors.js';
 import { checkSponsor } from './sponsor_check.js';
 import { marketTick, resetMarketLinks, configured as marketConfigured, searchUrl } from './markets.js';
 
@@ -372,7 +372,7 @@ async function sponsorsList(req, env) {
     FROM sponsor_ads ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'awaiting_payment' THEN 1 WHEN 'checking' THEN 2 ELSE 3 END, updated_at DESC LIMIT 300`).all();
   const rev = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS a, COUNT(*) AS n FROM sponsor_payments WHERE status = 'paid' AND paid_at > ?`).bind(now - 30 * 86400e3).first();
   const flag = await db.prepare(`SELECT enabled FROM feature_flags WHERE key = 'sponsor_ads'`).first();
-  return json(req, 200, { ads: results, settings: await spSettings(db), revenue_30d_thb: Math.round(rev.a / 100), payments_30d: rev.n, enabled: !flag || !!flag.enabled,
+  return json(req, 200, { ads: results, settings: await spSettings(db), google: await gadSettings(db), revenue_30d_thb: Math.round(rev.a / 100), payments_30d: rev.n, enabled: !flag || !!flag.enabled,
     setup: { stripe: !!(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET), ai: !!(env.AI || env.SPONSOR_AI_URL), safe_browsing: !!env.SAFE_BROWSING_KEY, email: !!(env.RESEND_API_KEY && env.EMAIL_FROM) } });
 }
 async function sponsorImg(req, env, a, id) {
@@ -410,6 +410,18 @@ async function sponsorSettings(req, env, a) {
     const v = parseInt(b[k], 10);
     if (!Number.isFinite(v) || v < lo || v > hi) throw new ApiError(400, 'invalid_' + k);
     await db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(k, String(v)).run(); out[k] = v;
+  }
+  // Google AdMob (top banner in the phone app): gad_on 0/1, ad unit IDs ca-app-pub-<16 digits>/<10 digits> or '' (= Google test banner)
+  if (b.gad_on !== undefined) {
+    const v = b.gad_on === true || b.gad_on === 1 || b.gad_on === '1' ? '1' : b.gad_on === false || b.gad_on === 0 || b.gad_on === '0' ? '0' : null;
+    if (!v) throw new ApiError(400, 'invalid_gad_on');
+    await db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind('gad_on', v).run(); out.gad_on = v;
+  }
+  for (const k of ['gad_android', 'gad_ios']) {
+    if (b[k] === undefined) continue;
+    const v = String(b[k] == null ? '' : b[k]).trim();
+    if (v && !/^ca-app-pub-\d{16}\/\d{10}$/.test(v)) throw new ApiError(400, 'invalid_' + k);
+    await db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(k, v).run(); out[k] = v;
   }
   dropAdsCache();
   await audit(db, 'admin', a.id, 'sponsor_settings', null, out, country(req));

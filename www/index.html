@@ -21,11 +21,11 @@
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.76-adchip-2026-11-21">
+<meta name="sea-scout-build" content="standalone-r14.15.77-admob-2026-11-21">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.76 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.77 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -790,9 +790,9 @@ async function seaResilientMarine(b,m){
 </script>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.76</div><div id="ssAbout" class="ver" style="opacity:.55;font-size:11px;bottom:calc(36px + env(safe-area-inset-bottom))">About Sea Scout · Verification code: 7557</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.77</div><div id="ssAbout" class="ver" style="opacity:.55;font-size:11px;bottom:calc(36px + env(safe-area-inset-bottom))">About Sea Scout · Verification code: 7557</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.76 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.77 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1082,8 +1082,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.76-adchip-2026-11-21
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.76-adchip-2026-11-21';
+// SEA_SCOUT_BUILD=standalone-r14.15.77-admob-2026-11-21
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.77-admob-2026-11-21';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -7352,7 +7352,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.76';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.77';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -7831,6 +7831,60 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
 
 </script>
 <script>
+// r14.15.77 · Google AdMob banner at the top of the phone app (Android / iOS only — never on the website).
+// Settings come with /sponsor/ads (sponsor.js passes them on): google.on, google.android, google.ios.
+// No ad unit set yet → Google's own test banner (no money). Paying members never see it.
+// The banner is drawn by the phone on top of the web page, so the page is pushed down by the banner's height,
+// and the banner hides itself while a full-screen panel (sign-in, 3D, pop-ups) covers the top of the screen.
+(()=>{
+ const cap=window.Capacitor;if(!cap||!cap.isNativePlatform||!cap.isNativePlatform())return;
+ const AM=cap.Plugins&&cap.Plugins.AdMob;if(!AM)return;
+ const plat=cap.getPlatform&&cap.getPlatform();if(plat!=='android'&&plat!=='ios')return;
+ const TEST={android:'ca-app-pub-3940256099942544/6300978111',ios:'ca-app-pub-3940256099942544/2934735716'};
+ const SAFE='var(--safe-area-inset-top,env(safe-area-inset-top,0px))';
+ const st=document.createElement('style');st.id='gadCss';
+ st.textContent=`html.sea-native.gad body{padding-top:calc(${SAFE} + var(--gadH,0px))}html.sea-native.gad .bar.mainBar{top:calc(${SAFE} + var(--gadH,0px))}html.sea-native.gad .bar.mainBar::before{height:calc(${SAFE} + var(--gadH,0px))}`;
+ document.head.appendChild(st);
+ let cfg=null,state='off',lastH=0,hiddenByUs=false,busy=false,unit='';
+ const root=document.documentElement;
+ const setH=h=>{h=Math.max(0,Math.round(h||0));root.style.setProperty('--gadH',h+'px');root.classList.toggle('gad',h>0);dispatchEvent(new Event('resize'));};
+ // real paying members (checked by the server) — the tester unlock still sees ads
+ const paid=()=>{try{return typeof SS_ENT!=='undefined'&&(SS_ENT.source==='backend'||SS_ENT.source==='backend-cache')&&SS_ENT.isPremium();}catch(_){return false;}};
+ const want=()=>!!(cfg&&cfg.on!==false)&&!paid()&&navigator.onLine!==false;
+ async function stop(){if(state==='off')return;state='off';hiddenByUs=false;lastH=0;setH(0);try{await AM.removeBanner();}catch(_){}}
+ async function start(){
+  if(busy||state!=='off'||!want())return;busy=true;
+  try{
+   let ci=null;
+   try{ci=await AM.requestConsentInfo();if(ci&&ci.isConsentFormAvailable&&ci.status==='REQUIRED')ci=await AM.showConsentForm();}catch(_){ci=null;}
+   if(ci&&ci.canRequestAds===false){state='off';return;}   // the user has not agreed (EU/UK) — no banner
+   await AM.initialize({});
+   if(!start.l){start.l=1;
+    AM.addListener('bannerAdSizeChanged',s=>{const h=s&&s.height||0;if(h>0){lastH=h;setH(h);}else if(!hiddenByUs){lastH=0;setH(0);}});
+    AM.addListener('bannerAdFailedToLoad',()=>{if(!hiddenByUs){lastH=0;setH(0);}});}
+   unit=(cfg&&cfg[plat])||TEST[plat];
+   await AM.showBanner({adId:unit,adSize:'ADAPTIVE_BANNER',position:'TOP_CENTER',margin:0,isTesting:unit===TEST[plat]});
+   state='on';
+  }catch(_){state='off';setH(0);}
+  finally{busy=false;}
+ }
+ // hide while something full-screen covers the strip under the status bar; show again when it is gone
+ function watch(){
+  if(state!=='on'||!lastH)return;
+  const pt=parseFloat(getComputedStyle(document.body).paddingTop)||0;if(!root.classList.contains('gad')&&!hiddenByUs)return;
+  const y=Math.max(1,pt-lastH/2),el=document.elementFromPoint(innerWidth/2,y);
+  const clear=!el||el===document.body||el===root||!!(el.closest&&el.closest('.bar.mainBar'));
+  if(!clear&&!hiddenByUs){hiddenByUs=true;AM.hideBanner().catch(()=>{});}
+  else if(clear&&hiddenByUs){hiddenByUs=false;AM.resumeBanner().catch(()=>{});}
+ }
+ setInterval(()=>{if(state==='on'&&!want())stop();else if(state==='off'&&want())start();else watch();},800);
+ addEventListener('seaSpData',e=>{const g=e.detail&&e.detail.google;const nu=g&&g[plat]||TEST[plat];cfg=g||{on:true};
+  if(state==='on'&&(!want()||nu!==unit)){stop().then(start);}else start();});
+ window.seaGadState=()=>({state,height:lastH,hidden:hiddenByUs,unit,paid:paid()});
+})();
+
+</script>
+<script>
 // r14.15.75 · Sponsor strip (bottom of the map screen, above the tab bar) + reserved Google ad slot (top, off until set up).
 // Paid banners from /api/v1/sponsor/ads rotate every N s (server setting, 10 s). No banners → one "advertise here" card; with banners → a small "+ advertise" chip stays in the corner (r14.15.76).
 // Free-plan friendly: the list is cached 30 min on the phone, images are immutable (browser cache), views are counted
@@ -7883,11 +7937,12 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
   bar.hidden=false;i=Math.floor(Math.random()*sl.length);show(i);tick();refit();
  }
  async function load(force){
-  if(!force){try{const c=JSON.parse(localStorage.getItem(KEY)||'null');if(c&&Date.now()-c.at<TTL){data=c.d;draw();return;}}catch(_){}}
+  if(!force){try{const c=JSON.parse(localStorage.getItem(KEY)||'null');if(c&&Date.now()-c.at<TTL){data=c.d;try{dispatchEvent(new CustomEvent('seaSpData',{detail:data}));}catch(_){}draw();return;}}catch(_){}}
   try{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);const r=await fetch(base()+'sponsor/ads',{signal:ctl.signal});clearTimeout(to);
    if(r.ok){data=await r.json();try{localStorage.setItem(KEY,JSON.stringify({at:Date.now(),d:data}));}catch(_){}}}catch(_){}
   if(!data){try{const c=JSON.parse(localStorage.getItem(KEY)||'null');if(c)data=c.d;}catch(_){}}
   if(!data)data={enabled:true,ads:[]};   // offline first run: show the "advertise here" card
+  try{dispatchEvent(new CustomEvent('seaSpData',{detail:data}));}catch(_){}   // r14.15.77: Google banner settings ride along (gads.js)
   draw();
  }
  // views → server once per session (and when the app goes to the background)

@@ -243,6 +243,12 @@ const VIEWS={
    <p>Stripe ${yes(r.setup.stripe)} · AI ตรวจรูป ${yes(r.setup.ai)} · Google Safe Browsing ${yes(r.setup.safe_browsing)} · อีเมลแจ้งร้าน ${yes(r.setup.email)} · สวิตช์ <code>sponsor_ads</code>: ${r.enabled?'<span class="ok">เปิด</span>':'<span class="warn">ปิด</span>'}</p>
    <div class="row">ราคา <input id="spP" type="number" value="${S.price}" style="width:100px" ${own?'':'disabled'}> บาท ต่อ <input id="spD" type="number" value="${S.days}" style="width:60px" ${own?'':'disabled'}> วัน · สูงสุด <input id="spM" type="number" value="${S.max}" style="width:60px" ${own?'':'disabled'}> เจ้า (0 = ไม่จำกัด) · สลับทุก <input id="spR" type="number" value="${S.rotate}" style="width:60px" ${own?'':'disabled'}> วินาที ${own?'<button class="b p" id="spSave">บันทึก</button>':''}</div>
    ${ad?'<button class="b" id="spRun">ตรวจงานค้าง/หมดอายุตอนนี้</button>':''}</div>
+   <div class="card"><h2>โฆษณา Google (แถบบนของแอปมือถือ · AdMob)</h2>
+   <p class="mute">แสดงเฉพาะในแอป Android/iOS ไม่แสดงบนเว็บ · ผู้ใช้ที่จ่ายเงินแพ็กเกจจะไม่เห็น · ช่อง Ad unit ID ว่าง = ใช้แบนเนอร์ทดสอบของ Google (ไม่มีรายได้) · App ID ต้องตรงกับที่ฝังในแอป (เปลี่ยน App ID ต้องสร้างแอปใหม่)</p>
+   <div class="row"><label><input type="checkbox" id="gOn" ${r.google&&r.google.on?'checked':''} ${own?'':'disabled'}> เปิดโฆษณา Google</label>
+    · Android ad unit <input id="gA" value="${esc((r.google&&r.google.android)||'')}" placeholder="ca-app-pub-…/…" style="width:250px" ${own?'':'disabled'}>
+    · iOS ad unit <input id="gI" value="${esc((r.google&&r.google.ios)||'')}" placeholder="ca-app-pub-…/…" style="width:250px" ${own?'':'disabled'}>
+    ${own?'<button class="b p" id="gSave">บันทึก</button>':''}</div></div>
    <div class="card"><h2>รายการโฆษณา</h2><table><tr><th>รูป</th><th>ร้าน</th><th>สถานะ</th><th>แสดงถึง</th><th>เห็น / คลิก</th><th>ผลตรวจ</th><th></th></tr>
    ${r.ads.map(a=>{const s=ST[a.status]||[a.status,''];let c={};try{c=JSON.parse(a.check_json||'{}');}catch(_){}
     const chk=[c.page?('หน้าเว็บ '+(c.page.ok?'✔':'✖')+(c.page.note?' ('+c.page.note+')':'')):'',c.safe_browsing?('SafeBrowsing '+(c.safe_browsing.skipped?'—':c.safe_browsing.ok?'✔':'✖')):'',c.ai?('AI '+(c.ai.skipped?'—':c.ai.error?'error'+(c.ai.fallback?' → ใช้กฎอย่างเดียว':''):c.ai.ok?'✔':'✖')):'',c.words?('คำต้องห้าม: '+c.words.hit):''].filter(Boolean).join(' · ');
@@ -251,6 +257,7 @@ const VIEWS={
      <td>${ad?`${['active','awaiting_payment','checking','expired'].includes(a.status)?`<button class="b d" data-sr="${esc(a.id)}">นำออก</button>`:''} ${['removed','suspended','rejected'].includes(a.status)?`<button class="b" data-ss="${esc(a.id)}">คืนสถานะ</button>`:''} <button class="b" data-sc="${esc(a.id)}">ตรวจใหม่</button> <button class="b" data-se="${esc(a.id)}">+วัน</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="7" class="mute">ยังไม่มีร้านส่งโฆษณา</td></tr>'}</table></div>`;
   const go=async f=>{try{await f();toast('เรียบร้อย');show();}catch(e){toast(e.message,true);}};
   const sv=$('#spSave');if(sv)sv.onclick=()=>go(()=>api('PUT','sponsors/settings',{sponsor_price_thb:+$('#spP').value,sponsor_days:+$('#spD').value,sponsor_max:+$('#spM').value,sponsor_rotate_s:+$('#spR').value}));
+  const gs=$('#gSave');if(gs)gs.onclick=()=>go(()=>api('PUT','sponsors/settings',{gad_on:$('#gOn').checked?1:0,gad_android:$('#gA').value.trim(),gad_ios:$('#gI').value.trim()}));
   const rn=$('#spRun');if(rn)rn.onclick=()=>go(()=>api('POST','sponsors/run',{}));
   v.onclick=async e=>{const d=e.target.dataset;
    if(d.si){try{const x=await api('GET','sponsors/'+d.si+'/image');const box=document.getElementById('im_'+d.si);box.innerHTML=`<img src="${esc(x.image)}" alt="" style="max-width:320px;border-radius:8px;margin-top:6px">`;}catch(err){toast(err.message,true);}}

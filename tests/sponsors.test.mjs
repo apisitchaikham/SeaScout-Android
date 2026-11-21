@@ -208,5 +208,24 @@ ok('flag off → app gets enabled:false and no ads', (await adsList()).enabled =
 ok('flag off → no new submissions', (await submit()).j.error === 'sponsor_closed');
 d1(`UPDATE feature_flags SET enabled = 1 WHERE key = 'sponsor_ads'`);
 
+// ---- r14.15.77: Google AdMob settings ride along with /sponsor/ads ----
+{
+  const put = (b, t = adm.owner) => call('PUT', '/api/v1/admin/sponsors/settings', { body: b, token: t });
+  ok('google: admin (not owner) cannot change', (await put({ gad_on: 0 }, adm.admin)).s === 403);
+  ok('google: bad ad unit refused', (await put({ gad_android: 'ca-app-pub-123~456' })).s === 400);
+  ok('google: app ID (with ~) refused as ad unit', (await put({ gad_ios: 'ca-app-pub-1234567890123456~1234567890' })).s === 400);
+  ok('google: bad on/off refused', (await put({ gad_on: 'maybe' })).s === 400);
+  ok('google: save', (await put({ gad_on: 1, gad_android: 'ca-app-pub-1234567890123456/1234567890', gad_ios: '' })).s === 200);
+  let g = (await call('GET', '/api/v1/sponsor/ads')).j.google;
+  ok('google: app sees on + android unit, ios empty → test banner', g && g.on === true && g.android === 'ca-app-pub-1234567890123456/1234567890' && g.ios === null, g);
+  ok('google: switch off', (await put({ gad_on: 0 })).s === 200);
+  g = (await call('GET', '/api/v1/sponsor/ads')).j.google;
+  ok('google: app sees off', g && g.on === false, g);
+  const lst = (await call('GET', '/api/v1/admin/sponsors', { token: adm.admin })).j;
+  ok('google: admin list shows the settings', lst && lst.google && lst.google.on === false && !!lst.google.android, lst && lst.google);
+  await put({ gad_on: 1, gad_android: '', gad_ios: '' });
+  g = (await call('GET', '/api/v1/sponsor/ads')).j.google;
+  ok('google: back to on + test banner', g && g.on === true && g.android === null, g);
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

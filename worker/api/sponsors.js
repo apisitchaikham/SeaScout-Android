@@ -23,6 +23,13 @@ export async function settings(db) {
   return { price: Math.max(1, parseInt(s.sponsor_price_thb || '5000', 10)), days: Math.max(1, parseInt(s.sponsor_days || '30', 10)),
     max: Math.max(0, parseInt(s.sponsor_max || '0', 10)), rotate: Math.max(3, parseInt(s.sponsor_rotate_s || '10', 10)) };
 }
+// r14.15.77: Google AdMob top banner in the phone app — on/off + ad unit IDs live here so they change without a new app build.
+// Empty ID → the app shows Google's own test banner (no money, safe to show while the real IDs are not set).
+export async function gadSettings(db) {
+  const { results } = await db.prepare(`SELECT key, value FROM app_settings WHERE key LIKE 'gad_%'`).all();
+  const g = Object.fromEntries(results.map((r) => [r.key, r.value]));
+  return { on: g.gad_on !== '0', android: g.gad_android || null, ios: g.gad_ios || null };
+}
 async function flagOn(db) { const f = await db.prepare(`SELECT enabled FROM feature_flags WHERE key = 'sponsor_ads'`).first(); return !f || !!f.enabled; }
 const siteBase = (env) => (env.SITE_URL || SITE).replace(/\/+$/, '');
 
@@ -176,7 +183,7 @@ export async function ads(req, env) {
     const s = await settings(db), on = await flagOn(db);
     const { results } = on ? await db.prepare(`SELECT id, business, headline, image_hash FROM sponsor_ads WHERE status = 'active' AND paid_until > ? ORDER BY paid_until DESC, created_at`).bind(Date.now()).all() : { results: [] };
     const base = new URL('/api/v1/sponsor/', req.url).href;
-    ADS_CACHE = { enabled: on, rotate_s: s.rotate, price_thb: s.price, days: s.days, advertise_url: siteBase(env) + '/advertise.html',
+    ADS_CACHE = { enabled: on, google: await gadSettings(db), rotate_s: s.rotate, price_thb: s.price, days: s.days, advertise_url: siteBase(env) + '/advertise.html',
       ads: results.map((a) => ({ id: a.id, business: a.business, headline: a.headline, img: `${base}img/${a.id}?v=${a.image_hash}`, go: base + 'go/' + a.id })) };
     ADS_AT = Date.now();
   }
