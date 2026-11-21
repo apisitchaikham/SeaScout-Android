@@ -3,6 +3,7 @@ import { autoShopTick } from './api/autoshop.js';
 import { monitorTick, countCrash } from './api/monitor.js';
 import { marketTick } from './api/markets.js';
 import { sponsorTick } from './api/sponsors.js';
+import { sosTick } from './api/sos.js';
 
 // Sea Scout website Worker (r14.15.44). Static files are served by Cloudflare directly (free, not counted);
 // this script only runs for paths that are not files: /api/crash (anonymous error reports → Worker logs).
@@ -37,6 +38,8 @@ export default {
     ctx.waitUntil(marketTick(env).then((r) => console.log(JSON.stringify({ seascout: 'market_links', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'market_links', error: String(e) }))));
     // r14.15.75: sponsor banners — finish waiting checks, expire, remind, re-check live links
     ctx.waitUntil(sponsorTick(env).then((r) => console.log(JSON.stringify({ seascout: 'sponsors', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'sponsors', error: String(e) }))));
+    // r14.15.80: SOS — expire alerts silent for 12 h, prune old tracks
+    ctx.waitUntil(sosTick(env).then((r) => console.log(JSON.stringify({ seascout: 'sos', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'sos', error: String(e) }))));
     // r14.15.73: health snapshot + alerts (same cron)
     ctx.waitUntil(monitorTick(env).then((r) => console.log(JSON.stringify({ seascout: 'monitor', ...r }))).catch((e) => console.log(JSON.stringify({ seascout: 'monitor', error: String(e) }))));
   },

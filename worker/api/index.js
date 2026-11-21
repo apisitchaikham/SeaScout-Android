@@ -13,6 +13,7 @@ import { handleAdmin } from './admin.js';
 import { submit as spSubmit, status as spStatus, pay as spPay, stripeWebhook, ads as spAds, img as spImg, go as spGo, seen as spSeen } from './sponsors.js';
 
 import { PRIVACY_VERSION_RE, deviceFrom, meBody } from './common.js';
+import { create as sosCreate, update as sosUpdate, close as sosClose, status as sosStatus, myOpen as sosMine, helper as sosHelper, nearby as sosNearby, accept as sosAccept, decline as sosDecline, helperPos as sosHpos, detail as sosDetail } from './sos.js';
 
 // ---------- handlers ----------
 async function register(req, env) {
@@ -233,6 +234,18 @@ const ROUTES = [
   ['GET', /^\/api\/v1\/sponsor\/img\/(spn_[A-Za-z0-9_-]{16})$/, spImg],
   ['GET', /^\/api\/v1\/sponsor\/go\/(spn_[A-Za-z0-9_-]{16})$/, spGo],
   ['POST', /^\/api\/v1\/sponsor\/seen$/, spSeen],
+  // r14.15.80: SOS between nearby users
+  ['POST', /^\/api\/v1\/sos$/, sosCreate],
+  ['GET', /^\/api\/v1\/sos\/mine$/, sosMine],
+  ['PUT', /^\/api\/v1\/sos\/helper$/, sosHelper],
+  ['POST', /^\/api\/v1\/sos\/nearby$/, sosNearby],
+  ['POST', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})\/pos$/, sosUpdate],
+  ['POST', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})\/close$/, sosClose],
+  ['GET', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})\/status$/, sosStatus],
+  ['POST', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})\/accept$/, sosAccept],
+  ['POST', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})\/leave$/, sosDecline],
+  ['POST', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})\/hpos$/, sosHpos],
+  ['GET', /^\/api\/v1\/sos\/(sos_[A-Za-z0-9_-]{16})$/, sosDetail],
   ['GET', /^\/api\/v1\/flags$/, flags],
   ['GET', /^\/api\/v1\/boot$/, boot],
 ];
