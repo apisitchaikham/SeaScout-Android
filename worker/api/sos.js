@@ -3,7 +3,7 @@
 // Helpers who switched on "receive SOS automatically" (PUT /sos/helper, with consent) poll POST /sos/nearby while the
 // app is open; they may POST /sos/{id}/accept and then send their own position (POST /sos/{id}/hpos) which only the
 // sender sees. Free-plan budget: helper positions are written at most every 2 min, sender fixes at most every 10 s,
-// and /nearby answers from a 4 s per-area memory cache.
+// and /nearby answers from a 4 s per-area memory cache; with {wait} it long-polls (≤ 25 s, checks every 3 s).
 import { ApiError, json, readJson, newId, country } from './util.js';
 import { authenticate, audit, rateLimit } from './store.js';
 
@@ -49,7 +49,7 @@ export async function create(req, env) {
     dropSosCache();
     return json(req, 200, { alert: pub(await mine(db, open.id, u.user_id)), again: true });
   }
-  if (!(await rateLimit(db, 'sos:u:' + u.user_id, 6, 24 * HOUR))) throw new ApiError(429, 'too_many_requests');
+  if (!(await rateLimit(db, 'sos:u:' + u.user_id, 2, 24 * HOUR))) throw new ApiError(429, 'too_many_requests');   // r14.15.83: 2 new SOS per account per 24 h (pressing again updates the open one)
   const id = newId('sos');
   await db.batch([
     db.prepare(`INSERT INTO sos_alerts (id, user_id, kind, people, lat, lon, acc, last_lat, last_lon, last_acc, last_at, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -125,17 +125,25 @@ export async function nearby(req, env) {
   if (!h.at || now - h.at > 120e3 || distKm(h.lat || 0, h.lon || 0, p.lat, p.lon) > 1) {
     await db.prepare('UPDATE sos_helpers SET lat = ?, lon = ?, at = ?, updated_at = ? WHERE user_id = ?').bind(p.lat, p.lon, now, now, u.user_id).run();
   }
-  const key = Math.round(p.lat) + ',' + Math.round(p.lon);
+  const key = Math.round(p.lat) + ',' + Math.round(p.lon), radius = h.radius_km || RADIUS_KM, dLat = MAX_RADIUS / 111 + 1;
+  // r14.15.83: long-poll — with {wait} (≤ 25 s) and {known: ids the app already has}, the request stays open and checks
+  // the open alerts every 3 s (indexed, usually 0 rows) and answers at once when something new appears. One request per
+  // ~25 s instead of one every 8 s, and a new SOS still arrives within ~3 s.
+  const wait = Math.max(0, Math.min(25, Number(b.wait) || 0)) * 1000, known = new Set(Array.isArray(b.known) ? b.known.slice(0, 50).map(String) : []);
+  const near = (list) => list.filter((a) => a.user_id !== u.user_id && distKm(p.lat, p.lon, a.last_lat, a.last_lon) <= radius);
+  const load = async () => { const { results } = await db.prepare(`SELECT * FROM sos_alerts WHERE status = 'open' AND last_lat BETWEEN ? AND ?`).bind(p.lat - dLat, p.lat + dLat).all(); const c = { at: Date.now(), rows: results }; NEAR.set(key, c); if (NEAR.size > 200) NEAR.delete(NEAR.keys().next().value); return c; };
   let hit = NEAR.get(key);
-  if (!hit || now - hit.at > 4e3) {   // r14.15.82: 4 s (was 15 s) so a new SOS reaches helpers within seconds
-    await expireOld(db, now);
-    const dLat = MAX_RADIUS / 111 + 1;
-    const { results } = await db.prepare(`SELECT * FROM sos_alerts WHERE status = 'open' AND last_lat BETWEEN ? AND ?`).bind(p.lat - dLat, p.lat + dLat).all();
-    hit = { at: now, rows: results }; NEAR.set(key, hit);
-    if (NEAR.size > 200) NEAR.delete(NEAR.keys().next().value);
+  if (!hit || now - hit.at > 4e3) { await expireOld(db, now); hit = await load(); }   // 4 s per-area cache
+  let rows = near(hit.rows);
+  if (wait && !rows.some((a) => !known.has(a.id))) {
+    const until = now + wait;
+    while (Date.now() < until - 500) {
+      await new Promise((r) => setTimeout(r, Math.min(3000, until - Date.now())));
+      const c = NEAR.get(key);
+      rows = near(c && Date.now() - c.at <= 3e3 ? c.rows : (await load()).rows);
+      if (rows.some((a) => !known.has(a.id))) break;
+    }
   }
-  const radius = h.radius_km || RADIUS_KM;
-  const rows = hit.rows.filter((a) => a.user_id !== u.user_id && distKm(p.lat, p.lon, a.last_lat, a.last_lon) <= radius);
   const mineAcc = rows.length ? (await db.prepare(`SELECT alert_id, left_at FROM sos_responses WHERE user_id = ? AND alert_id IN (${rows.map(() => '?').join(',')})`).bind(u.user_id, ...rows.map((a) => a.id)).all()).results : [];
   const acc = new Map(mineAcc.map((r) => [r.alert_id, r]));
   const counts = rows.length ? (await db.prepare(`SELECT alert_id, COUNT(*) AS n FROM sos_responses WHERE left_at IS NULL AND alert_id IN (${rows.map(() => '?').join(',')}) GROUP BY alert_id`).bind(...rows.map((a) => a.id)).all()).results : [];
