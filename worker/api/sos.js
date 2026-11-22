@@ -3,7 +3,7 @@
 // Helpers who switched on "receive SOS automatically" (PUT /sos/helper, with consent) poll POST /sos/nearby while the
 // app is open; they may POST /sos/{id}/accept and then send their own position (POST /sos/{id}/hpos) which only the
 // sender sees. Free-plan budget: helper positions are written at most every 2 min, sender fixes at most every 10 s,
-// and /nearby answers from a 15 s per-area memory cache.
+// and /nearby answers from a 4 s per-area memory cache.
 import { ApiError, json, readJson, newId, country } from './util.js';
 import { authenticate, audit, rateLimit } from './store.js';
 
@@ -127,7 +127,7 @@ export async function nearby(req, env) {
   }
   const key = Math.round(p.lat) + ',' + Math.round(p.lon);
   let hit = NEAR.get(key);
-  if (!hit || now - hit.at > 15e3) {
+  if (!hit || now - hit.at > 4e3) {   // r14.15.82: 4 s (was 15 s) so a new SOS reaches helpers within seconds
     await expireOld(db, now);
     const dLat = MAX_RADIUS / 111 + 1;
     const { results } = await db.prepare(`SELECT * FROM sos_alerts WHERE status = 'open' AND last_lat BETWEEN ? AND ?`).bind(p.lat - dLat, p.lat + dLat).all();
