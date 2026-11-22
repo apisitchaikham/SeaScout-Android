@@ -23,11 +23,11 @@ html body #ssSplash h1,html body #ssSplash .sub{display:none}html body #ssSplash
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.86-half-2026-11-22">
+<meta name="sea-scout-build" content="standalone-r14.15.87-timer-2026-11-22">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.86 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.87 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -793,9 +793,9 @@ async function seaResilientMarine(b,m){
 <style>#tmdWho small{display:block;margin-top:4px}#tmdWho .sfTel{gap:6px 14px;flex-wrap:wrap}#tmdWho .sfTel a{font-weight:700}</style>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.86</div><div id="ssAbout" class="ver" style="opacity:.55;font-size:11px;bottom:calc(36px + env(safe-area-inset-bottom))">About Sea Scout · Verification code: 7557</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.87</div><div id="ssAbout" class="ver" style="opacity:.55;font-size:11px;bottom:calc(36px + env(safe-area-inset-bottom))">About Sea Scout · Verification code: 7557</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.86 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.87 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1085,8 +1085,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.86-half-2026-11-22
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.86-half-2026-11-22';
+// SEA_SCOUT_BUILD=standalone-r14.15.87-timer-2026-11-22
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.87-timer-2026-11-22';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -7433,7 +7433,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.86';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.87';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -8969,7 +8969,7 @@ body.navDriving #seaRecenter.on{display:flex}
  const css=`.ptS{font:13px/1.4 system-ui,Sarabun,sans-serif;color:var(--ink,#e6f2f8)}
 .ptS .ptHd{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .ptS .ptHd b{font-size:13.5px;flex:1}
-.ptS .ptX{border:0;background:rgba(255,255,255,.08);color:inherit;width:28px;height:28px;border-radius:50%;font-size:13px;cursor:pointer;flex:0 0 auto}
+.ptS .ptX{border:0!important;background:rgba(255,255,255,.1)!important;color:inherit;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;max-height:30px;padding:0!important;margin:0;border-radius:50%!important;font-size:14px;line-height:30px;text-align:center;cursor:pointer;flex:0 0 30px;box-sizing:border-box;aspect-ratio:1/1;display:inline-flex;align-items:center;justify-content:center;box-shadow:none!important}
 .ptS .ptChips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .ptS .ptChips>span{background:rgba(31,166,224,.13);border:1px solid rgba(31,166,224,.3);border-radius:999px;padding:2px 8px;font-size:12px;white-space:nowrap}
 .ptS .ptChips>span.wide{white-space:normal}
@@ -9000,22 +9000,26 @@ html.light #seaPtSheet,body.light #seaPtSheet{background:rgba(255,255,255,.97);c
    <div class="ptFish">${fish}</div>${cl?`<div class="ptMore">${cl}</div>`:''}
    <div class="ptAct"><button type="button" onclick="seaOpenAnalysis()">📊 ดูบทวิเคราะห์</button><button type="button" class="p" onclick="seaPtClose();seaGoTo(${lat},${lon})">🧭 นำทางไปจุดนี้</button></div></div>`;
  };
- let sheet=null,fadeT=0,lastPt=null;
+ let sheet=null,fadeT=0,lastPt=null,lastTap=0;
+ addEventListener('pointerup',e=>{if(e.target.closest&&e.target.closest('#map'))lastTap=Date.now();},true);
  function place(s){try{const mr=map.getContainer().getBoundingClientRect();let lo=mr.top+8,hi=mr.bottom-8;
    for(const id of ['ssMapCard','seaHeatTime']){const e=document.getElementById(id);if(!e||!e.offsetParent)continue;const r=e.getBoundingClientRect();if(r.height&&r.top>mr.top+mr.height*.45&&r.top<hi)hi=r.top-8;}
    const sf=document.getElementById('sosFab');
    s.style.maxHeight=Math.max(160,hi-lo)+'px';const h=Math.min(s.offsetHeight,hi-lo),top=Math.max(lo,lo+(hi-lo-h)/2);
    s.style.top=Math.round(top)+'px';s.style.bottom='auto';return{lo,hi,top,bot:top+h};}catch(_){return null;}}
- // r14.15.86: open, then fade out over 10 s and close by itself; touching the card keeps it open
- function openFade(s){document.body.classList.add('ptOpen');place(s);clearTimeout(fadeT);s.classList.remove('fade');s.dataset.keep='';void s.offsetWidth;
-  fadeT=setTimeout(()=>{if(!s.dataset.keep)s.classList.add('fade');},80);}
+ // r14.15.87: open, fade out over 10 s and close on a timer (does not rely on transitionend); touching the card
+ // restarts the 10 s (it never stays forever); touches in the first 0.7 s (the opening tap itself) are ignored
+ let closeT=0,openedAt=0;
+ function openFade(s){document.body.classList.add('ptOpen');place(s);openedAt=Date.now();restart(s);}
+ function restart(s){clearTimeout(fadeT);clearTimeout(closeT);s.classList.remove('fade');void s.offsetWidth;
+  fadeT=setTimeout(()=>s.classList.add('fade'),80);closeT=setTimeout(()=>seaPtClose(),10200);}
  function ensure(){if(sheet)return sheet;sheet=document.createElement('div');sheet.id='seaPtSheet';sheet.setAttribute('role','dialog');
   ['mousedown','touchstart','pointerdown','wheel','dblclick'].forEach(ev=>sheet.addEventListener(ev,e=>e.stopPropagation(),{passive:true}));
   sheet.addEventListener('transitionend',e=>{if(e.propertyName==='opacity'&&sheet.classList.contains('fade'))seaPtClose();});
-  const keep=()=>{sheet.dataset.keep='1';clearTimeout(fadeT);sheet.classList.remove('fade');};
-  ['pointerdown','touchstart','wheel'].forEach(ev=>sheet.addEventListener(ev,keep,{passive:true}));
+  const keep=()=>{if(Date.now()-openedAt<700||!document.body.classList.contains('ptOpen'))return;restart(sheet);};
+  ['pointerdown','wheel'].forEach(ev=>sheet.addEventListener(ev,keep,{passive:true}));
   document.body.appendChild(sheet);return sheet;}
- window.seaPtClose=function(){document.body.classList.remove('ptOpen');if(sheet){clearTimeout(fadeT);sheet.classList.remove('fade');}};
+ window.seaPtClose=function(){document.body.classList.remove('ptOpen');clearTimeout(closeT);if(sheet){clearTimeout(fadeT);sheet.classList.remove('fade');}};
  // returns true when it took over (phones); the caller then skips the Leaflet popup
  window.seaPtSheet=function(lat,lon,v,all,mark){
   if(!mob())return false;
@@ -9023,7 +9027,7 @@ html.light #seaPtSheet,body.light #seaPtSheet{background:rgba(255,255,255,.97);c
   try{if(mark&&!mark._ptHook){mark._ptHook=1;mark.on('click',()=>openFade(s));}}catch(_){}
   // a refresh of the same point (new SST, time slider…) only updates the text: never re-opens or restarts the fade
   const same=lastPt&&Math.abs(lastPt[0]-lat)<1e-9&&Math.abs(lastPt[1]-lon)<1e-9;lastPt=[lat,lon];
-  if(same)return true;
+  if(same||(document.body.classList.contains('ptOpen')&&Date.now()-lastTap>1500))return true;
   openFade(s);
   // r14.15.86: sit in the middle of the map, above the weather card and the heatmap-time bar, and keep the tapped
   // point visible (above the card, or below it when there is more room there)
