@@ -32,7 +32,8 @@ export async function gadSettings(db) {
 }
 // r14.15.88: Admitad affiliate base links (one per joined program, e.g. https://rzekl.com/g/abc123/). Not secret —
 // they are the public tracking links Admitad gives after a program approves the ad space. Empty = that shop's buttons stay hidden.
-export const AFF_KEYS = ['shopee_th', 'aliexpress', 'banggood'];
+export const AFF_KEYS = ['shopee_th', 'shopee_my', 'shopee_sg', 'shopee_ph', 'shopee_vn', 'shopee_id', 'shopee_tw', 'shopee_br', 'shopee_mx',
+  'lazada_my', 'lazada_id', 'walmart_us', 'decathlon_pl', 'aliexpress', 'banggood', 'dhgate', 'vevor'];
 export async function affSettings(db) {
   const { results } = await db.prepare(`SELECT key, value FROM app_settings WHERE key LIKE 'aff_%'`).all();
   const g = Object.fromEntries(results.map((r) => [r.key, r.value]));

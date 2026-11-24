@@ -23,11 +23,11 @@ html body #ssSplash h1,html body #ssSplash .sub{display:none}html body #ssSplash
 </style>
 
 <meta charset="utf-8">
-<meta name="sea-scout-build" content="standalone-r14.15.88-aff-2026-11-24">
+<meta name="sea-scout-build" content="standalone-r14.15.89-affworld-2026-11-24">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e2a3b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Sea Scout – Marine Navigation Assist r14.15.88 · World tides + search</title>
+<title>Sea Scout – Marine Navigation Assist r14.15.89 · World tides + search</title>
 <link rel="stylesheet" href="lib/leaflet.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
 <style>
@@ -793,9 +793,9 @@ async function seaResilientMarine(b,m){
 <style>#tmdWho small{display:block;margin-top:4px}#tmdWho .sfTel{gap:6px 14px;flex-wrap:wrap}#tmdWho .sfTel a{font-weight:700}</style>
 </head>
 <body>
-<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.88</div><div id="ssAbout" class="ver" style="opacity:.55;font-size:11px;bottom:calc(36px + env(safe-area-inset-bottom))">About Sea Scout · Verification code: 7557</div></div>
+<div id="ssSplash" role="status" aria-live="polite"><div class="lg"></div><h1>Sea Scout</h1><div class="sub">Marine Navigation Assist</div><div class="wave"><i></i></div><div class="st">กำลังเตรียมแผนที่…</div><div class="ver">r14.15.89</div><div id="ssAbout" class="ver" style="opacity:.55;font-size:11px;bottom:calc(36px + env(safe-area-inset-bottom))">About Sea Scout · Verification code: 7557</div></div>
 <header>
-  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.88 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
+  <h1>Sea Scout <small style="font-weight:400;font-size:.6em;color:var(--mute)">r14.15.89 · Marine NavAssist</small><button type="button" class="langBtn" id="langBtn" data-noi18n aria-haspopup="dialog" aria-label="เปลี่ยนภาษา / Change language" title="เปลี่ยนภาษา / Change language">🌐 <span class="langName">ไทย</span> ▾</button></h1>
   <p>ระบบวิเคราะห์ทะเลทั่วโลก เน้นอ่าวไทย + GPS/NMEA Navigation Assist · ไม่ใช่ ECDIS และไม่ได้รับรองให้ใช้เป็นระบบนำทางหลัก · GEBCO/ETOPO/DMR/3D เป็นข้อมูลวิเคราะห์ ไม่ใช่ข้อมูลหลบอันตราย</p>
 </header>
 <div class="bar">
@@ -1085,8 +1085,8 @@ async function seaResilientMarine(b,m){
 <script src="lib/leaflet-maplibre-gl.js"></script>
 <script>if(!(window.L&&L.maplibreGL))document.write('<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"><\/script>')</script>
 <script>
-// SEA_SCOUT_BUILD=standalone-r14.15.88-aff-2026-11-24
-window.__SEA_SCOUT_BUILD__='standalone-r14.15.88-aff-2026-11-24';
+// SEA_SCOUT_BUILD=standalone-r14.15.89-affworld-2026-11-24
+window.__SEA_SCOUT_BUILD__='standalone-r14.15.89-affworld-2026-11-24';
 console.info('[Sea Scout] '+window.__SEA_SCOUT_BUILD__+' | on-demand marine search | tide source transparency | AIS/SAR anchorage evidence | local edge processing | GPS/NMEA | not ECDIS');
 
 // Network guard: reject direct PFEG-host requests before a script/fetch/XHR is sent.
@@ -7433,7 +7433,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
  const SITE_API='https://seascout.apisit-chaikham.workers.dev/api/v1/';
- const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.88';
+ const KEY='seaAcctV1',IKEY='seaInstallIdV1',VERSION='r14.15.89';
  const cap=window.Capacitor,P=(cap&&cap.Plugins)||{},native=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
  function base(){
   try{const o=localStorage.getItem('seaApiBase');if(o)return o.replace(/\/*$/,'/');}catch(_){}
@@ -9075,28 +9075,57 @@ body .mainBar>#layersBox .lbLock{font-size:12px}}`;
 
 </script>
 <script>
-// r14.15.88: "🛒 หาซื้อ" buttons under each species' bait/line/hook in the analysis — Shopee TH, AliExpress and Banggood
-// search pages for that kind of tackle, opened through the Admitad tracking link of each joined program (set in Admin;
-// empty = that shop's button is hidden). Search links are opened only when the user taps — no automated queries.
+// r14.15.88/89: "🛒 หาซื้อ" buttons under each species' bait/line/hook in the analysis. Each shop is an Admitad program;
+// its tracking base link (https://…/g/<hash>/) is set in Admin (empty = hidden). The app picks the shops for the user's
+// country (from the scanned area, else the phone's locale/time zone) first, then the worldwide shops, max 4 buttons.
+// Links open the shop's own search page only when the user taps — no automated queries (Shopee rule).
 (function(){
  let AFF=null;
  try{const c=JSON.parse(localStorage.getItem('seaAffV1')||'null');if(c)AFF=c;}catch(_){}
  addEventListener('seaSpData',e=>{try{const a=e.detail&&e.detail.aff;if(a){AFF=a;localStorage.setItem('seaAffV1',JSON.stringify(a));}}catch(_){}});
- // tackle keywords per gear profile (Thai for Shopee TH, English for the worldwide shops)
+ // tackle keywords per gear profile: [Thai, English]
  const KW={squid:['โยตกหมึก','squid jig'],cuttle:['โยตกหมึกกระดอง','cuttlefish squid jig'],octopus:['เหยื่อตกหมึกสาย','octopus jig'],
   bait:['ซาบิกิ ตกปลา','sabiki rig'],pelagic:['เหยื่อปลอม ตกปลาทะเล','saltwater casting lure'],toothy:['สายลีดเดอร์ ลวด ตกปลา','wire leader fishing lure'],
   billfish:['เหยื่อทรอลลิ่ง','trolling lure'],reef:['เหยื่อจิ๊ก ตกปลาทะเล','fishing metal jig'],bottom:['ชุดตกปลาหน้าดิน','bottom fishing rig'],
   bottomCold:['ชุดตกปลาหน้าดิน','bottom fishing rig'],coast:['เบ็ดตกปลาชายฝั่ง','surf fishing rig'],mullet:['เบ็ดตกปลากระบอก','mullet fishing hook'],
   ray:['ชุดตกปลากระเบน','heavy bottom fishing rig'],light:['ไฟล่อปลา ใต้น้ำ','underwater fishing light'],deep:['เหยื่อจิ๊ก น้ำลึก','slow pitch jig'],deepSquid:['โยตกหมึก น้ำลึก','deep squid jig']};
- const wrap=(base,url,sub)=>base+'?ulp='+encodeURIComponent(url)+'&subid='+encodeURIComponent(String(sub||'app').replace(/[^a-z0-9_-]/gi,'').slice(0,40));
- function inTH(){try{const c=typeof seaSafetyCountry==='function'?seaSafetyCountry():null;if(c)return c==='TH'||c.cc==='TH';}catch(_){}return /^th/i.test(navigator.language||'')||(Intl.DateTimeFormat().resolvedOptions().timeZone||'')==='Asia/Bangkok';}
+ // a local word for "fishing" added to the English term on shops whose shoppers search in another language
+ const FISH={vi:'câu cá',id:'pancing',ms:'memancing',pt:'pesca',es:'pesca',zh:'釣魚',pl:'wędkarstwo'};
+ const q=s=>encodeURIComponent(s),dash=s=>encodeURIComponent(s.replace(/\s+/g,'-'));
+ // key: [label, countries ('*' = worldwide), language, search URL builder]
+ const SHOPS=[
+  ['shopee_th','Shopee',['TH'],'th',k=>'https://shopee.co.th/search?keyword='+q(k)],
+  ['shopee_my','Shopee',['MY'],'ms',k=>'https://shopee.com.my/search?keyword='+q(k)],
+  ['shopee_sg','Shopee',['SG'],'en',k=>'https://shopee.sg/search?keyword='+q(k)],
+  ['shopee_ph','Shopee',['PH'],'en',k=>'https://shopee.ph/search?keyword='+q(k)],
+  ['shopee_vn','Shopee',['VN'],'vi',k=>'https://shopee.vn/search?keyword='+q(k)],
+  ['shopee_id','Shopee',['ID'],'id',k=>'https://shopee.co.id/search?keyword='+q(k)],
+  ['shopee_tw','Shopee',['TW'],'zh',k=>'https://shopee.tw/search?keyword='+q(k)],
+  ['shopee_br','Shopee',['BR'],'pt',k=>'https://shopee.com.br/search?keyword='+q(k)],
+  ['shopee_mx','Shopee',['MX'],'es',k=>'https://shopee.com.mx/search?keyword='+q(k)],
+  ['lazada_my','Lazada',['MY'],'ms',k=>'https://www.lazada.com.my/catalog/?q='+q(k)],
+  ['lazada_id','Lazada',['ID'],'id',k=>'https://www.lazada.co.id/catalog/?q='+q(k)],
+  ['walmart_us','Walmart',['US'],'en',k=>'https://www.walmart.com/search?q='+q(k)],
+  ['decathlon_pl','Decathlon',['PL'],'pl',k=>'https://www.decathlon.pl/search?Ntt='+q(k)],
+  ['aliexpress','AliExpress',['*'],'en',k=>'https://www.aliexpress.com/w/wholesale-'+dash(k)+'.html'],
+  ['banggood','Banggood',['*'],'en',k=>'https://www.banggood.com/search/'+dash(k)+'.html'],
+  ['dhgate','DHgate',['*'],'en',k=>'https://www.dhgate.com/wholesale/search.do?act=search&searchkey='+q(k)],
+  ['vevor','VEVOR',['*'],'en',k=>'https://www.vevor.com/search?q='+q(k)]];
+ window.SEA_AFF_SHOPS=SHOPS.map(s=>s[0]);
+ const wrap=(base,url,sub)=>base+'?ulp='+encodeURIComponent(url)+'&subid='+encodeURIComponent(sub);
+ const TZC={'Asia/Bangkok':'TH','Asia/Kuala_Lumpur':'MY','Asia/Singapore':'SG','Asia/Manila':'PH','Asia/Ho_Chi_Minh':'VN','Asia/Saigon':'VN','Asia/Jakarta':'ID','Asia/Makassar':'ID','Asia/Jayapura':'ID','Asia/Taipei':'TW','America/Sao_Paulo':'BR','America/Mexico_City':'MX','Europe/Warsaw':'PL'};
+ function country(){
+  try{const c=typeof seaSafetyCountry==='function'?seaSafetyCountry():null;if(typeof c==='string'&&c)return c.toUpperCase();if(c&&c.cc)return c.cc;}catch(_){}
+  try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(TZC[tz])return TZC[tz];if(/^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage)|^Pacific\/Honolulu/.test(tz))return'US';}catch(_){}
+  const m=/-([A-Z]{2})$/.exec(navigator.language||'');return m?m[1]:'';
+ }
  window.seaAffHtml=function(sp,prof){
-  if(!AFF)return'';const k=KW[prof]||KW.reef,sub='ss_'+(KW[prof]?prof:'reef'),b=[];
-  if(AFF.shopee_th&&inTH())b.push(['Shopee',wrap(AFF.shopee_th,'https://shopee.co.th/search?keyword='+encodeURIComponent(k[0]),sub)]);
-  if(AFF.aliexpress)b.push(['AliExpress',wrap(AFF.aliexpress,'https://www.aliexpress.com/w/wholesale-'+encodeURIComponent(k[1].replace(/\s+/g,'-'))+'.html',sub)]);
-  if(AFF.banggood)b.push(['Banggood',wrap(AFF.banggood,'https://www.banggood.com/search/'+encodeURIComponent(k[1].replace(/\s+/g,'-'))+'.html',sub)]);
-  if(!b.length)return'';
-  return `<div class="affRow"><span>🛒 หาซื้อ</span> <span class="affQ" data-noi18n>${(inTH()&&AFF.shopee_th?k[0]:k[1]).replace(/[<>&"]/g,'')}</span>${b.map(x=>`<a class="affB" href="${x[1].replace(/"/g,'&quot;')}" target="_blank" rel="noopener sponsored nofollow">${x[0]}</a>`).join('')}<small>ลิงก์พันธมิตร · Sea Scout อาจได้ค่าคอมมิชชันโดยราคาเท่าเดิม</small></div>`;
+  if(!AFF)return'';const k=KW[prof]||KW.reef,cc=country(),sub='ss_'+(KW[prof]?prof:'reef');
+  const term=lang=>lang==='th'?k[0]:(FISH[lang]?k[1]+' '+FISH[lang]:k[1]);
+  const local=SHOPS.filter(s=>AFF[s[0]]&&s[2].includes(cc)),world=SHOPS.filter(s=>AFF[s[0]]&&s[2][0]==='*');
+  const pick=local.concat(world).slice(0,4);if(!pick.length)return'';
+  const shown=term(pick[0][3]);
+  return `<div class="affRow"><span>🛒 หาซื้อ</span> <span class="affQ" data-noi18n>${shown.replace(/[<>&"]/g,'')}</span>${pick.map(s=>`<a class="affB" href="${wrap(AFF[s[0]],s[4](term(s[3])),sub).replace(/"/g,'&quot;')}" target="_blank" rel="noopener sponsored nofollow">${s[1]}</a>`).join('')}<small>ลิงก์พันธมิตร · Sea Scout อาจได้ค่าคอมมิชชันโดยราคาเท่าเดิม</small></div>`;
  };
  const st=document.createElement('style');st.textContent=`.affRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px;font-size:13px}
 .affRow .affQ{color:var(--mute,#8eaabb);font-size:12px}

@@ -233,12 +233,12 @@ d1(`UPDATE feature_flags SET enabled = 1 WHERE key = 'sponsor_ads'`);
   ok('aff: admin (not owner) cannot change', (await put({ aff_shopee_th: 'https://rzekl.com/g/abc123def/' }, adm.admin)).s === 403);
   ok('aff: http link refused', (await put({ aff_shopee_th: 'http://rzekl.com/g/abc123def/' })).s === 400);
   ok('aff: non-/g/ link refused', (await put({ aff_aliexpress: 'https://evil.example.com/redirect?to=x' })).s === 400);
-  ok('aff: save (slash added)', (await put({ aff_shopee_th: 'https://rzekl.com/g/1e8d114494abc', aff_aliexpress: 'https://alitems.site/g/1e8d1144949f1b7a/', aff_banggood: '' })).s === 200);
+  ok('aff: save (slash added)', (await put({ aff_shopee_th: 'https://rzekl.com/g/1e8d114494abc', aff_aliexpress: 'https://alitems.site/g/1e8d1144949f1b7a/', aff_banggood: '', aff_vevor: 'https://ad.admitad.com/g/abcdef1234/' })).s === 200);
   const a = (await call('GET', '/api/v1/sponsor/ads')).j.aff;
-  ok('aff: app sees links, empty → null', a && a.shopee_th === 'https://rzekl.com/g/1e8d114494abc/' && a.aliexpress === 'https://alitems.site/g/1e8d1144949f1b7a/' && a.banggood === null, a);
+  ok('aff: app sees links, empty → null', a && a.shopee_th === 'https://rzekl.com/g/1e8d114494abc/' && a.aliexpress === 'https://alitems.site/g/1e8d1144949f1b7a/' && a.banggood === null && a.vevor === 'https://ad.admitad.com/g/abcdef1234/' && a.shopee_mx === null && Object.keys(a).length === 17, a);
   const lst = (await call('GET', '/api/v1/admin/sponsors', { token: adm.admin })).j;
   ok('aff: admin list shows links', lst && lst.aff && lst.aff.shopee_th, lst && lst.aff);
-  await put({ aff_shopee_th: '', aff_aliexpress: '' });
+  await put({ aff_shopee_th: '', aff_aliexpress: '', aff_vevor: '' });
   const b = (await call('GET', '/api/v1/sponsor/ads')).j.aff;
   ok('aff: cleared', b && b.shopee_th === null && b.aliexpress === null, b);
 }

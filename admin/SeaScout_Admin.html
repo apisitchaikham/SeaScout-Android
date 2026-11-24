@@ -93,6 +93,8 @@ async function show(){
 }
 const kpi=(n,l,c)=>`<div class="card kpi"><b class="${c||''}">${esc(n)}</b><span>${esc(l)}</span></div>`;
 const yes=v=>v?'<span class="ok">✔ พร้อม</span>':'<span class="warn">✖ ยังไม่ตั้งค่า</span>';
+const AFF_K=['shopee_th','shopee_my','shopee_sg','shopee_ph','shopee_vn','shopee_id','shopee_tw','shopee_br','shopee_mx','lazada_my','lazada_id','walmart_us','decathlon_pl','aliexpress','banggood','dhgate','vevor'];
+const AFF_N={shopee_th:'Shopee TH',shopee_my:'Shopee MY',shopee_sg:'Shopee SG',shopee_ph:'Shopee PH',shopee_vn:'Shopee VN',shopee_id:'Shopee ID',shopee_tw:'Shopee TW',shopee_br:'Shopee BR',shopee_mx:'Shopee MX',lazada_my:'Lazada MY',lazada_id:'Lazada ID',walmart_us:'Walmart US',decathlon_pl:'Decathlon PL',aliexpress:'AliExpress 🌐',banggood:'Banggood 🌐',dhgate:'DHgate 🌐',vevor:'VEVOR 🌐'};
 const VIEWS={
  async overview(v){
   const o=await api('GET','overview');const subs={};(o.subscriptions||[]).forEach(s=>subs[s.plan_id]=(subs[s.plan_id]||0)+s.n);
@@ -251,10 +253,8 @@ const VIEWS={
     ${own?'<button class="b p" id="gSave">บันทึก</button>':''}</div></div>
    <div class="card"><h2>ลิงก์ Affiliate (Admitad · ปุ่ม "หาซื้อ" ในหน้าวิเคราะห์)</h2>
    <p class="mute">ใส่ลิงก์หลักของแต่ละโปรแกรมที่ได้รับอนุมัติแล้ว (Admitad → Programs → โปรแกรมนั้น → Banners and Links → ลิงก์แบบ <code>https://…/g/xxxx/</code>) · แอปจะต่อท้ายด้วย <code>?ulp=</code> หน้าค้นหาของร้าน + <code>subid</code> ชนิดปลา · ช่องว่าง = ซ่อนปุ่มร้านนั้น</p>
-   <div class="row">Shopee TH <input id="afS" value="${esc((r.aff&&r.aff.shopee_th)||'')}" placeholder="https://…/g/…/" style="width:260px" ${own?'':'disabled'}>
-    · AliExpress <input id="afA" value="${esc((r.aff&&r.aff.aliexpress)||'')}" placeholder="https://…/g/…/" style="width:260px" ${own?'':'disabled'}>
-    · Banggood <input id="afB" value="${esc((r.aff&&r.aff.banggood)||'')}" placeholder="https://…/g/…/" style="width:260px" ${own?'':'disabled'}>
-    ${own?'<button class="b p" id="afSave">บันทึก</button>':''}</div></div>
+   <div class="row" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:6px 14px">${AFF_K.map(k=>`<label style="display:flex;gap:6px;align-items:center"><span style="min-width:96px">${AFF_N[k]}</span><input data-af="${k}" value="${esc((r.aff&&r.aff[k])||'')}" placeholder="https://…/g/…/" style="flex:1" ${own?'':'disabled'}></label>`).join('')}</div>
+   <div class="row">${own?'<button class="b p" id="afSave">บันทึก</button>':''}</div></div>
    <div class="card"><h2>รายการโฆษณา</h2><table><tr><th>รูป</th><th>ร้าน</th><th>สถานะ</th><th>แสดงถึง</th><th>เห็น / คลิก</th><th>ผลตรวจ</th><th></th></tr>
    ${r.ads.map(a=>{const s=ST[a.status]||[a.status,''];let c={};try{c=JSON.parse(a.check_json||'{}');}catch(_){}
     const chk=[c.page?('หน้าเว็บ '+(c.page.ok?'✔':'✖')+(c.page.note?' ('+c.page.note+')':'')):'',c.safe_browsing?('SafeBrowsing '+(c.safe_browsing.skipped?'—':c.safe_browsing.ok?'✔':'✖')):'',c.ai?('AI '+(c.ai.skipped?'—':c.ai.error?'error'+(c.ai.fallback?' → ใช้กฎอย่างเดียว':''):c.ai.ok?'✔':'✖')):'',c.words?('คำต้องห้าม: '+c.words.hit):''].filter(Boolean).join(' · ');
@@ -264,7 +264,7 @@ const VIEWS={
   const go=async f=>{try{await f();toast('เรียบร้อย');show();}catch(e){toast(e.message,true);}};
   const sv=$('#spSave');if(sv)sv.onclick=()=>go(()=>api('PUT','sponsors/settings',{sponsor_price_thb:+$('#spP').value,sponsor_days:+$('#spD').value,sponsor_max:+$('#spM').value,sponsor_rotate_s:+$('#spR').value}));
   const gs=$('#gSave');if(gs)gs.onclick=()=>go(()=>api('PUT','sponsors/settings',{gad_on:$('#gOn').checked?1:0,gad_android:$('#gA').value.trim(),gad_ios:$('#gI').value.trim()}));
-  const af=$('#afSave');if(af)af.onclick=()=>go(()=>api('PUT','sponsors/settings',{aff_shopee_th:$('#afS').value.trim(),aff_aliexpress:$('#afA').value.trim(),aff_banggood:$('#afB').value.trim()}));
+  const af=$('#afSave');if(af)af.onclick=()=>go(()=>{const b={};document.querySelectorAll('[data-af]').forEach(i=>b['aff_'+i.dataset.af]=i.value.trim());return api('PUT','sponsors/settings',b);});
   const rn=$('#spRun');if(rn)rn.onclick=()=>go(()=>api('POST','sponsors/run',{}));
   v.onclick=async e=>{const d=e.target.dataset;
    if(d.si){try{const x=await api('GET','sponsors/'+d.si+'/image');const box=document.getElementById('im_'+d.si);box.innerHTML=`<img src="${esc(x.image)}" alt="" style="max-width:320px;border-radius:8px;margin-top:6px">`;}catch(err){toast(err.message,true);}}
