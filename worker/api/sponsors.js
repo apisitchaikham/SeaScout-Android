@@ -30,6 +30,14 @@ export async function gadSettings(db) {
   const g = Object.fromEntries(results.map((r) => [r.key, r.value]));
   return { on: g.gad_on !== '0', android: g.gad_android || null, ios: g.gad_ios || null };
 }
+// r14.15.88: Admitad affiliate base links (one per joined program, e.g. https://rzekl.com/g/abc123/). Not secret —
+// they are the public tracking links Admitad gives after a program approves the ad space. Empty = that shop's buttons stay hidden.
+export const AFF_KEYS = ['shopee_th', 'aliexpress', 'banggood'];
+export async function affSettings(db) {
+  const { results } = await db.prepare(`SELECT key, value FROM app_settings WHERE key LIKE 'aff_%'`).all();
+  const g = Object.fromEntries(results.map((r) => [r.key, r.value]));
+  return Object.fromEntries(AFF_KEYS.map((k) => [k, g['aff_' + k] || null]));
+}
 async function flagOn(db) { const f = await db.prepare(`SELECT enabled FROM feature_flags WHERE key = 'sponsor_ads'`).first(); return !f || !!f.enabled; }
 const siteBase = (env) => (env.SITE_URL || SITE).replace(/\/+$/, '');
 
@@ -183,7 +191,7 @@ export async function ads(req, env) {
     const s = await settings(db), on = await flagOn(db);
     const { results } = on ? await db.prepare(`SELECT id, business, headline, image_hash FROM sponsor_ads WHERE status = 'active' AND paid_until > ? ORDER BY paid_until DESC, created_at`).bind(Date.now()).all() : { results: [] };
     const base = new URL('/api/v1/sponsor/', req.url).href;
-    ADS_CACHE = { enabled: on, google: await gadSettings(db), rotate_s: s.rotate, price_thb: s.price, days: s.days, advertise_url: siteBase(env) + '/advertise.html',
+    ADS_CACHE = { enabled: on, google: await gadSettings(db), aff: await affSettings(db), rotate_s: s.rotate, price_thb: s.price, days: s.days, advertise_url: siteBase(env) + '/advertise.html',
       ads: results.map((a) => ({ id: a.id, business: a.business, headline: a.headline, img: `${base}img/${a.id}?v=${a.image_hash}`, go: base + 'go/' + a.id })) };
     ADS_AT = Date.now();
   }

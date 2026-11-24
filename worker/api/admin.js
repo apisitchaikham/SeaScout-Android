@@ -5,7 +5,7 @@ import { ApiError, json, readJson, newId, randomToken, sha256, hashPassword, saf
 import { audit, rateLimit } from './store.js';
 import { autoShopTick, configured as shopConfigured } from './autoshop.js';
 import { monitorTick, healthView } from './monitor.js';
-import { settings as spSettings, gadSettings, dropAdsCache, sponsorTick } from './sponsors.js';
+import { settings as spSettings, gadSettings, affSettings, AFF_KEYS, dropAdsCache, sponsorTick } from './sponsors.js';
 import { checkSponsor } from './sponsor_check.js';
 import { marketTick, resetMarketLinks, configured as marketConfigured, searchUrl } from './markets.js';
 
@@ -372,7 +372,7 @@ async function sponsorsList(req, env) {
     FROM sponsor_ads ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'awaiting_payment' THEN 1 WHEN 'checking' THEN 2 ELSE 3 END, updated_at DESC LIMIT 300`).all();
   const rev = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS a, COUNT(*) AS n FROM sponsor_payments WHERE status = 'paid' AND paid_at > ?`).bind(now - 30 * 86400e3).first();
   const flag = await db.prepare(`SELECT enabled FROM feature_flags WHERE key = 'sponsor_ads'`).first();
-  return json(req, 200, { ads: results, settings: await spSettings(db), google: await gadSettings(db), revenue_30d_thb: Math.round(rev.a / 100), payments_30d: rev.n, enabled: !flag || !!flag.enabled,
+  return json(req, 200, { ads: results, settings: await spSettings(db), google: await gadSettings(db), aff: await affSettings(db), revenue_30d_thb: Math.round(rev.a / 100), payments_30d: rev.n, enabled: !flag || !!flag.enabled,
     setup: { stripe: !!(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET), ai: !!(env.AI || env.SPONSOR_AI_URL), safe_browsing: !!env.SAFE_BROWSING_KEY, email: !!(env.RESEND_API_KEY && env.EMAIL_FROM) } });
 }
 async function sponsorImg(req, env, a, id) {
@@ -422,6 +422,13 @@ async function sponsorSettings(req, env, a) {
     const v = String(b[k] == null ? '' : b[k]).trim();
     if (v && !/^ca-app-pub-\d{16}\/\d{10}$/.test(v)) throw new ApiError(400, 'invalid_' + k);
     await db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(k, v).run(); out[k] = v;
+  }
+  // Admitad affiliate base links: https://<admitad tracking domain>/g/<hash>/ or '' to hide that shop
+  for (const k of AFF_KEYS) {
+    const f = 'aff_' + k; if (b[f] === undefined) continue;
+    let v = String(b[f] == null ? '' : b[f]).trim();
+    if (v) { if (!/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}\/g\/[a-z0-9]{6,64}\/?$/i.test(v)) throw new ApiError(400, 'invalid_' + f); if (!v.endsWith('/')) v += '/'; }
+    await db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(f, v).run(); out[f] = v;
   }
   dropAdsCache();
   await audit(db, 'admin', a.id, 'sponsor_settings', null, out, country(req));

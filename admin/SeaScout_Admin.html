@@ -249,6 +249,12 @@ const VIEWS={
     · Android ad unit <input id="gA" value="${esc((r.google&&r.google.android)||'')}" placeholder="ca-app-pub-…/…" style="width:250px" ${own?'':'disabled'}>
     · iOS ad unit <input id="gI" value="${esc((r.google&&r.google.ios)||'')}" placeholder="ca-app-pub-…/…" style="width:250px" ${own?'':'disabled'}>
     ${own?'<button class="b p" id="gSave">บันทึก</button>':''}</div></div>
+   <div class="card"><h2>ลิงก์ Affiliate (Admitad · ปุ่ม "หาซื้อ" ในหน้าวิเคราะห์)</h2>
+   <p class="mute">ใส่ลิงก์หลักของแต่ละโปรแกรมที่ได้รับอนุมัติแล้ว (Admitad → Programs → โปรแกรมนั้น → Banners and Links → ลิงก์แบบ <code>https://…/g/xxxx/</code>) · แอปจะต่อท้ายด้วย <code>?ulp=</code> หน้าค้นหาของร้าน + <code>subid</code> ชนิดปลา · ช่องว่าง = ซ่อนปุ่มร้านนั้น</p>
+   <div class="row">Shopee TH <input id="afS" value="${esc((r.aff&&r.aff.shopee_th)||'')}" placeholder="https://…/g/…/" style="width:260px" ${own?'':'disabled'}>
+    · AliExpress <input id="afA" value="${esc((r.aff&&r.aff.aliexpress)||'')}" placeholder="https://…/g/…/" style="width:260px" ${own?'':'disabled'}>
+    · Banggood <input id="afB" value="${esc((r.aff&&r.aff.banggood)||'')}" placeholder="https://…/g/…/" style="width:260px" ${own?'':'disabled'}>
+    ${own?'<button class="b p" id="afSave">บันทึก</button>':''}</div></div>
    <div class="card"><h2>รายการโฆษณา</h2><table><tr><th>รูป</th><th>ร้าน</th><th>สถานะ</th><th>แสดงถึง</th><th>เห็น / คลิก</th><th>ผลตรวจ</th><th></th></tr>
    ${r.ads.map(a=>{const s=ST[a.status]||[a.status,''];let c={};try{c=JSON.parse(a.check_json||'{}');}catch(_){}
     const chk=[c.page?('หน้าเว็บ '+(c.page.ok?'✔':'✖')+(c.page.note?' ('+c.page.note+')':'')):'',c.safe_browsing?('SafeBrowsing '+(c.safe_browsing.skipped?'—':c.safe_browsing.ok?'✔':'✖')):'',c.ai?('AI '+(c.ai.skipped?'—':c.ai.error?'error'+(c.ai.fallback?' → ใช้กฎอย่างเดียว':''):c.ai.ok?'✔':'✖')):'',c.words?('คำต้องห้าม: '+c.words.hit):''].filter(Boolean).join(' · ');
@@ -258,6 +264,7 @@ const VIEWS={
   const go=async f=>{try{await f();toast('เรียบร้อย');show();}catch(e){toast(e.message,true);}};
   const sv=$('#spSave');if(sv)sv.onclick=()=>go(()=>api('PUT','sponsors/settings',{sponsor_price_thb:+$('#spP').value,sponsor_days:+$('#spD').value,sponsor_max:+$('#spM').value,sponsor_rotate_s:+$('#spR').value}));
   const gs=$('#gSave');if(gs)gs.onclick=()=>go(()=>api('PUT','sponsors/settings',{gad_on:$('#gOn').checked?1:0,gad_android:$('#gA').value.trim(),gad_ios:$('#gI').value.trim()}));
+  const af=$('#afSave');if(af)af.onclick=()=>go(()=>api('PUT','sponsors/settings',{aff_shopee_th:$('#afS').value.trim(),aff_aliexpress:$('#afA').value.trim(),aff_banggood:$('#afB').value.trim()}));
   const rn=$('#spRun');if(rn)rn.onclick=()=>go(()=>api('POST','sponsors/run',{}));
   v.onclick=async e=>{const d=e.target.dataset;
    if(d.si){try{const x=await api('GET','sponsors/'+d.si+'/image');const box=document.getElementById('im_'+d.si);box.innerHTML=`<img src="${esc(x.image)}" alt="" style="max-width:320px;border-radius:8px;margin-top:6px">`;}catch(err){toast(err.message,true);}}

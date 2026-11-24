@@ -227,5 +227,20 @@ d1(`UPDATE feature_flags SET enabled = 1 WHERE key = 'sponsor_ads'`);
   g = (await call('GET', '/api/v1/sponsor/ads')).j.google;
   ok('google: back to on + test banner', g && g.on === true && g.android === null, g);
 }
+// ---- r14.15.88: Admitad affiliate base links ride along with /sponsor/ads ----
+{
+  const put = (b, t = adm.owner) => call('PUT', '/api/v1/admin/sponsors/settings', { body: b, token: t });
+  ok('aff: admin (not owner) cannot change', (await put({ aff_shopee_th: 'https://rzekl.com/g/abc123def/' }, adm.admin)).s === 403);
+  ok('aff: http link refused', (await put({ aff_shopee_th: 'http://rzekl.com/g/abc123def/' })).s === 400);
+  ok('aff: non-/g/ link refused', (await put({ aff_aliexpress: 'https://evil.example.com/redirect?to=x' })).s === 400);
+  ok('aff: save (slash added)', (await put({ aff_shopee_th: 'https://rzekl.com/g/1e8d114494abc', aff_aliexpress: 'https://alitems.site/g/1e8d1144949f1b7a/', aff_banggood: '' })).s === 200);
+  const a = (await call('GET', '/api/v1/sponsor/ads')).j.aff;
+  ok('aff: app sees links, empty → null', a && a.shopee_th === 'https://rzekl.com/g/1e8d114494abc/' && a.aliexpress === 'https://alitems.site/g/1e8d1144949f1b7a/' && a.banggood === null, a);
+  const lst = (await call('GET', '/api/v1/admin/sponsors', { token: adm.admin })).j;
+  ok('aff: admin list shows links', lst && lst.aff && lst.aff.shopee_th, lst && lst.aff);
+  await put({ aff_shopee_th: '', aff_aliexpress: '' });
+  const b = (await call('GET', '/api/v1/sponsor/ads')).j.aff;
+  ok('aff: cleared', b && b.shopee_th === null && b.aliexpress === null, b);
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
