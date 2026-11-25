@@ -1,6 +1,8 @@
 // Sea Scout API v1 — central membership for Android, iOS and the admin dashboard.
 // Mounted under /api/v1/ by worker/site.js. Until a D1 database is bound as `DB`, every route except
 // /health answers 503 "backend_not_configured" — nothing else on the site changes.
+import { wxPoint, wxStorms } from './weather.js';
+import { memLimit, clientIp as _cip } from './util.js';
 import { ApiError, VERSION, LOCALES, PLATFORMS, json, readJson, corsHeaders, cleanEmail, checkPassword, str,
   hashPassword, safeEqual, newId, clientIp, country, sha256 } from './util.js';
 import { audit, rateLimit, upsertDevice, createSession, authenticate, rotateRefresh, entitlementsFor } from './store.js';
@@ -260,6 +262,17 @@ export async function handleApi(request, env) {
   const url = new URL(request.url);
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request) });
   if (url.pathname === '/api/v1/health') return json(request, 200, { ok: true, version: VERSION, db: !!env.DB, time: Date.now() });
+  // r14.15.92: in-memory burst guard per IP (before any D1 work)
+  {
+    const ip = _cip(request), p = url.pathname;
+    const heavy = request.method !== 'GET' && /^\/api\/v1\/(auth\/(login|register|password|google|apple|facebook|handoff|email)|sponsor\/(submit|status|pay)|sos$|admin\/login)/.test(p);
+    if (!memLimit('a:' + ip, 900, 60e3) || (heavy && !memLimit('h:' + ip, 40, 60e3)) || (p.startsWith('/api/v1/wx/') && !memLimit('w:' + ip, 120, 60e3)))
+      return json(request, 429, { error: 'too_many_requests' }, { 'Retry-After': '60' });
+  }
+  // r14.15.92: weather proxies need no database; cached at the edge so load is bounded by cells, not users
+  if (request.method === 'GET' && (url.pathname === '/api/v1/wx/point' || url.pathname === '/api/v1/wx/storms')) {
+    try { return await (url.pathname.endsWith('point') ? wxPoint(request, env) : wxStorms(request, env)); } catch (e) { return errorResponse(request, url, e); }
+  }
   if (!env.DB) return json(request, 503, { error: 'backend_not_configured' });
   if (url.pathname.startsWith('/api/v1/admin/')) {
     try { return await handleAdmin(request, env, url.pathname.slice('/api/v1/admin/'.length)); }

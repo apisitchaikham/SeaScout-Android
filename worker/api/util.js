@@ -3,7 +3,7 @@ export const VERSION = 'api-v1.0.0';
 export const ACCESS_TTL = 24 * 60 * 60 * 1000;       // 24 hours (r14.15.67: fewer refresh calls; revocation is still checked on every request)
 export const REFRESH_TTL = 60 * 24 * 60 * 60 * 1000;  // 60 days
 export const PBKDF2_ITER = 100000;                    // Workers WebCrypto maximum
-export const LOCALES = ['th', 'en', 'zh', 'vi', 'my', 'km', 'ms', 'id', 'fil'];
+export const LOCALES = ['th', 'en', 'zh', 'ja', 'vi', 'my', 'km', 'ms', 'id', 'fil'];
 export const PLATFORMS = ['android', 'ios', 'web'];
 
 // App origins: Android WebView (https://localhost), iOS WKWebView (capacitor://localhost), the website, local dev.
@@ -79,3 +79,16 @@ export function checkPassword(v) {
 export function str(v, max) { if (v == null) return null; const s = String(v).trim(); return s ? s.slice(0, max) : null; }
 export function clientIp(request) { return request.headers.get('CF-Connecting-IP') || '0.0.0.0'; }
 export function country(request) { return (request.cf && request.cf.country) || null; }
+
+// r14.15.92: per-isolate burst guard in front of D1 — a flood from one IP is refused in memory, so it cannot use up
+// the free plan's daily D1 writes (each D1 rate-limit check is a write). Not global (each Cloudflare isolate keeps its
+// own table) but it removes the cheap single-source flood; Cloudflare's own DDoS protection handles the rest.
+const MEM = new Map(); let memSweep = 0;
+export function memLimit(key, limit, windowMs) {
+  const now = Date.now();
+  if (now - memSweep > 60e3 || MEM.size > 50000) { memSweep = now; for (const [k, v] of MEM) if (now - v.t > v.w) MEM.delete(k); }
+  let e = MEM.get(key);
+  if (!e || now - e.t > windowMs) { e = { t: now, n: 0, w: windowMs }; MEM.set(key, e); }
+  e.n++;
+  return e.n <= limit;
+}
