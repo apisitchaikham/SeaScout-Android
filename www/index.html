@@ -7051,7 +7051,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
  function slidesOf(list){const out=[];list.forEach(it=>{const im=Array.isArray(it.imgs)&&it.imgs.length?it.imgs:[thumbOf(it)];im.forEach((src,j)=>out.push({it,src,j,n:im.length}));});return out;}
  function tiles(list,hint){
   const id='anC'+(++CID),sl=slidesOf(list);
-  if(!sl.length)return`<div class="anCar empty"><div class="anSlide"><div class="anImg"></div><div class="anTx"><b>ว่าง · เพิ่มสินค้า/วิดีโอได้</b><p>${esc(hint||'ใส่รูปสินค้า ลิงก์ร้าน และคำอธิบายอุปกรณ์ที่หน้า media/admin.html')}</p></div></div></div>`;
+  if(!sl.length)return'';   // r14.15.94f: no empty placeholder for users
   let h=`<div class="anCar" id="${id}"><div class="anTrack">`;
   sl.forEach(({it,src,j,n})=>{const vid=it.type==='video'||!!ytId(it.url);
    h+=`<a class="anSlide" href="${esc(it.url)}" target="_blank" rel="noopener"><div class="anImg${src?'':' noimg'}${it.mk?' mk':''}" style="${src?`background-image:url('${esc(src)}')`:''}">${vid?'<span class="pl">▶️</span>':''}${it.price?`<em class="pr">${esc(it.price)}</em>`:''}${n>1?`<i class="cnt">${j+1}/${n}</i>`:''}</div><div class="anTx"><b>${esc(it.title||it.url)}</b>${it.meta?`<small class="rv">${esc(it.meta)}</small>`:''}${it.desc?`<p>${esc(it.desc)}</p>`:(hint?`<p class="hint">แนะนำ: ${esc(hint)}</p>`:'')}<span class="go">${vid?'▶️ ดูวิดีโอ':'🛒 ดูสินค้า / เปิดลิงก์'} →</span></div></a>`;});
@@ -7127,7 +7127,7 @@ body[data-mtab="analysis"] aside section[data-mgroup="analysis"]{display:block}
    const rows=[['เหยื่อ',g.bait]];if(q&&q.alt&&q.alt!=='—')rows.push(['วิธีอื่น',q.alt]);rows.push(['สาย',g.line+(t&&t.line?' · '+t.line:'')],['เบ็ด/โย',g.hook]);
    if(t){rows.push(['ขนาด/น้ำหนัก',t.size],['แอ็คชั่น',t.action],['สีเหยื่อ',t.colour],['ช่วงเวลา',t.time]);if(t.tide)rows.push(['น้ำนิ่ง/กำลังน้ำ',t.tide]);if(t.drift)rows.push(['การลอยเรือ',t.drift]);}else if(prof!=='protected')rows.push(['น้ำหนัก',sinker(v)]);
    rows.push(['เคล็ดลับ',g.tip]);
-   return`<div class="anSp"><b>${i+1}. ${esc(x.sp.n)} ${x.v}%</b>${x.sp.like?`<div><small>${esc(x.sp.like)}</small></div>`:''}<div class="bar"><span class="fill" style="width:${x.v}%"></span></div><dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>${prof!=='protected'&&typeof seaAffHtml==='function'?seaAffHtml(x.sp,prof):''}${prof==='protected'?'':tiles((shop[x.sp.id]||[]).concat(mediaFor(items,x.sp)).slice(0,12),g.hook+(t&&t.size?' · '+t.size:''))}</div>`;}).join('')+'<small>เปอร์เซ็นต์คือดัชนีความเหมาะสมของสภาพแวดล้อม ไม่ใช่โอกาสที่จะจับได้ · ขนาดและน้ำหนักคำนวณจากความลึก กระแส ลม และความใสของจุดนี้ เป็นคำแนะนำทั่วไป ตรวจกฎการประมงท้องถิ่นก่อน</small>';
+   return`<div class="anSp"><b>${i+1}. ${esc(x.sp.n)} ${x.v}%</b>${x.sp.like?`<div><small>${esc(x.sp.like)}</small></div>`:''}<div class="bar"><span class="fill" style="width:${x.v}%"></span></div><dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>${prof!=='protected'&&typeof seaAffHtml==='function'?seaAffHtml(x.sp,prof,g,t):''}${prof==='protected'?'':tiles((shop[x.sp.id]||[]).concat(mediaFor(items,x.sp)).slice(0,12),g.hook+(t&&t.size?' · '+t.size:''))}</div>`;}).join('')+'<small>เปอร์เซ็นต์คือดัชนีความเหมาะสมของสภาพแวดล้อม ไม่ใช่โอกาสที่จะจับได้ · ขนาดและน้ำหนักคำนวณจากความลึก กระแส ลม และความใสของจุดนี้ เป็นคำแนะนำทั่วไป ตรวจกฎการประมงท้องถิ่นก่อน</small>';
   body.innerHTML=`<div class="anHead"><b>📍 ${fx(p.lat,4)}, ${fx(p.lon,4)}</b><small>${new Date().toLocaleString()}</small></div>
    <h3>🔎 ทุกปัจจัยของจุดนี้</h3><div class="anGrid">${F.map(f=>`<div class="anF"><span class="i">${f[0]}</span><b>${f[1]}</b>${f[2]?`<small>${f[2]}</small>`:''}</div>`).join('')}</div>
    ${sp}<div id="seaMemBox"></div>`;
@@ -9112,17 +9112,55 @@ body .mainBar>#layersBox .lbLock{font-size:12px}}`;
   try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(TZC[tz])return TZC[tz];if(/^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage)|^Pacific\/Honolulu/.test(tz))return'US';}catch(_){}
   const m=/-([A-Z]{2})$/.exec(navigator.language||'');return m?m[1]:'';
  }
- window.seaAffHtml=function(sp,prof){
-  if(!AFF)return'';const k=KW[prof]||KW.reef,cc=country(),sub='ss_'+(KW[prof]?prof:'reef');
-  const term=lang=>lang==='th'?k[0]:(FISH[lang]?k[1]+' '+FISH[lang]:k[1]);
+ // r14.15.94f: search terms come from the tackle actually recommended on the card (hook size, sinker/jig weight, line, leader)
+ // so the shop page matches what the user just read. Up to 4 chips; tapping a chip switches every shop button to that item.
+ const first=(re,x)=>{const m=re.exec(x||'');return m?m[1]:null};
+ function items(g,t,prof){
+  const out=[],add=(th,en)=>{if(out.length<4&&!out.some(o=>o.en===en))out.push({th,en})};
+  const hook=(g&&g.hook)||'',line=(g&&g.line)||'',size=(t&&t.size)||'';
+  // 1) hook / squid jig
+  if(/โย|ตะขอร่ม/.test(hook)){const n=first(/โย(?:หมึกสาย|เบอร์)?\s*([\d.]+)/,size);
+   if(prof==='octopus')add('โยตกหมึกสาย'+(n?' เบอร์ '+n:''),'octopus jig'+(n?' '+n:''));else add('โยตกหมึก'+(n?' เบอร์ '+n:''),'squid jig'+(n?' '+n:''));}
+  else if(/หลายตา/.test(hook)&&/#\s*\d/.test(hook))add('ซาบิกิ ตกปลา','sabiki rig');
+  else if(hook){const z=first(/(#?\s*\d+\/0|#\s*\d+|\d+\/0)/,hook),zz=z?z.replace(/\s/g,''):'',lbl=zz.startsWith('#')?zz.slice(1):zz;
+   const kind=/circle/i.test(hook)?['เบ็ด circle','circle hook']:/assist/i.test(hook)?['assist hook','assist hook']:/ทรีเบิ้ล/.test(hook)?['ตาเบ็ด','fishing hook']:/ก้านยาว/.test(hook)?['ตาเบ็ดก้านยาว','long shank fishing hook']:['ตาเบ็ดตกปลา','fishing hook'];
+   add(kind[0]+(lbl?' เบอร์ '+lbl:''),kind[1]+(lbl?(/\/0/.test(lbl)?' '+lbl:' size '+lbl):''));}
+  // 2) sinker / jig weight
+  const g1=first(/(\d+)\s*[–-]\s*\d+\s*ก\./,size)||first(/~?(\d+)\s*ก\./,size);
+  if(/ทุ่น/.test(size+hook))add('ทุ่นตกปลา','fishing float bobber');
+  if(/ตะกั่วเม็ด/.test(size))add('ตะกั่วเม็ด ตกปลา','split shot sinker');
+  else if(/ไฟ/.test(size))add('ไฟล่อปลา ใต้น้ำ','underwater fishing light');
+  if(/จิ๊กช้า|จิ๊ก:|ถ้าใช้จิ๊ก/.test(size)){const j=first(/(?:จิ๊กช้า|จิ๊ก:)\s*(\d+)/,size);add('เหยื่อจิ๊ก'+(j?' '+j+' กรัม':''),(/จิ๊กช้า/.test(size)?'slow pitch jig':'metal jig')+(j?' '+j+'g':''));}
+  if(/หัวจิ๊ก/.test(size)){add('หัวจิ๊ก'+(g1?' '+g1+' กรัม':''),'jig head'+(g1?' '+g1+'g':''));add('ปลายาง ตกปลา','soft plastic fishing lure');}
+  if(/ตะกั่วไข่|ลูกมะกอก/.test(size))add('ตะกั่วไข่ ตกปลา'+(g1?' '+g1+' กรัม':''),'egg sinker fishing'+(g1?' '+g1+'g':''));
+  else if(/ลูกตุ้ม/.test(size+hook)){const w=first(/ลูกตุ้ม\s*(\d+)/,size);add('ตะกั่วลูกตุ้ม'+(w?' '+w+' กรัม':''),'bank sinker'+(w?' '+w+'g':''));}
+  else if(/oz/.test(size)){const o=first(/(\d+)\s*[–-]\s*\d+\s*oz/,size)||first(/(\d+)\s*oz/,size);add('ตะกั่วตกปลา'+(o?' '+o+' oz':''),'fishing sinker'+(o?' '+o+' oz':''));}
+  else if(/ตะกั่ว/.test(size)&&!/ไฟ|ตะกั่วเม็ด/.test(size))add('ตะกั่วตกปลา'+(g1?' '+g1+' กรัม':''),'fishing sinker'+(g1?' '+g1+'g':''));
+  // 3) main line
+  const pe=first(/PE\s*([\d.]+)/,line),mono=first(/เอ็น\s*(\d+)/,line);
+  if(/^เอ็น/.test(line)&&mono)add('เอ็นตกปลา '+mono+' lb','monofilament fishing line '+mono+'lb');else if(pe)add('สาย PE '+pe,'PE braided fishing line '+pe);
+  // 4) leader
+  if(/ลวดสลิง/.test(line))add('ลีดลวดสลิง ตกปลา','wire leader fishing');
+  else{const l=first(/ลีด(?:ฟลูโรคาร์บอน)?\s*(\d+)/,line);if(l)add('สายช็อคลีด '+l+' lb','fluorocarbon leader '+l+'lb');else if(/สายหน้า/.test(size))add('สายหน้า ฟลูโรคาร์บอน','fluorocarbon leader line');}
+  if(!out.length){const k=KW[prof]||KW.reef;add(k[0],k[1]);}
+  return out;
+ }
+ window.seaAffHtml=function(sp,prof,g,t){
+  if(!AFF)return'';const cc=country(),sub='ss_'+(KW[prof]?prof:'reef');
   const local=SHOPS.filter(s=>AFF[s[0]]&&s[2].includes(cc)),world=SHOPS.filter(s=>AFF[s[0]]&&s[2][0]==='*');
   const pick=local.concat(world).slice(0,4);if(!pick.length)return'';
-  const shown=term(pick[0][3]);
-  return `<div class="affRow"><span>🛒 หาซื้อ</span> <span class="affQ" data-noi18n>${shown.replace(/[<>&"]/g,'')}</span>${pick.map(s=>`<a class="affB" href="${wrap(AFF[s[0]],s[4](term(s[3])),sub).replace(/"/g,'&quot;')}" target="_blank" rel="noopener sponsored nofollow">${s[1]}</a>`).join('')}<small>ลิงก์พันธมิตร · Sea Scout อาจได้ค่าคอมมิชชันโดยราคาเท่าเดิม</small></div>`;
+  const its=items(g,t,prof),term=(it,lang)=>lang==='th'?it.th:(FISH[lang]&&!/fishing/.test(it.en)?it.en+' '+FISH[lang]:it.en);
+  const e=x=>String(x).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const urls=its.map(it=>pick.map(s=>wrap(AFF[s[0]],s[4](term(it,s[3])),sub)));
+  const lbl=it=>/^th/i.test(document.documentElement.lang||'th')?it.th:it.en;   // chip text follows the app language
+  return `<div class="affRow" data-u="${e(JSON.stringify(urls))}"><span>🛒 หาซื้อ</span><span class="affCh">${its.map((it,i)=>`<button type="button" class="affC${i?'':' on'}" data-i="${i}" data-noi18n>${e(lbl(it))}</button>`).join('')}</span><span class="affBs">${pick.map((s,j)=>`<a class="affB" data-j="${j}" href="${e(urls[0][j])}" target="_blank" rel="noopener sponsored nofollow">${s[1]}</a>`).join('')}</span><small>ลิงก์พันธมิตร · Sea Scout อาจได้ค่าคอมมิชชันโดยราคาเท่าเดิม</small></div>`;
  };
+ document.addEventListener('click',ev=>{const c=ev.target.closest&&ev.target.closest('.affRow .affC');if(!c)return;const row=c.closest('.affRow');let u;try{u=JSON.parse(row.dataset.u)}catch(_){return}
+  const i=+c.dataset.i;row.querySelectorAll('.affC').forEach(b=>b.classList.toggle('on',b===c));row.querySelectorAll('.affB').forEach(a=>{const h=u[i]&&u[i][+a.dataset.j];if(h)a.href=h});});
  const st=document.createElement('style');st.textContent=`.affRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 4px;font-size:13px}
 .affRow .affQ{color:var(--mute,#8eaabb);font-size:12px}
 .affRow .affB{border:1px solid rgba(240,160,60,.55);background:rgba(240,160,60,.12);color:inherit;border-radius:999px;padding:5px 12px;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center}
+.affRow .affCh{display:flex;flex-wrap:wrap;gap:5px}.affRow .affC{border:1px solid rgba(142,170,187,.35);background:transparent;color:var(--mute,#8eaabb);border-radius:8px;padding:3px 8px;font-size:12px;cursor:pointer}.affRow .affC.on{color:#fff;border-color:rgba(240,160,60,.8);background:rgba(240,160,60,.18)}.affRow .affBs{display:flex;gap:6px;flex-basis:100%}
 .affRow small{flex-basis:100%;color:var(--mute,#8eaabb);font-size:11px}`;document.head.appendChild(st);
 })();
 
