@@ -93,8 +93,8 @@ async function show(){
 }
 const kpi=(n,l,c)=>`<div class="card kpi"><b class="${c||''}">${esc(n)}</b><span>${esc(l)}</span></div>`;
 const yes=v=>v?'<span class="ok">✔ พร้อม</span>':'<span class="warn">✖ ยังไม่ตั้งค่า</span>';
-const AFF_K=['shopee_th','shopee_my','shopee_sg','shopee_ph','shopee_vn','shopee_id','shopee_tw','shopee_br','shopee_mx','lazada_my','lazada_id','walmart_us','decathlon_pl','aliexpress','banggood','dhgate','vevor'];
-const AFF_N={shopee_th:'Shopee TH',shopee_my:'Shopee MY',shopee_sg:'Shopee SG',shopee_ph:'Shopee PH',shopee_vn:'Shopee VN',shopee_id:'Shopee ID',shopee_tw:'Shopee TW',shopee_br:'Shopee BR',shopee_mx:'Shopee MX',lazada_my:'Lazada MY',lazada_id:'Lazada ID',walmart_us:'Walmart US',decathlon_pl:'Decathlon PL',aliexpress:'AliExpress 🌐',banggood:'Banggood 🌐',dhgate:'DHgate 🌐',vevor:'VEVOR 🌐'};
+const AFF_K=['shopee_th','shopee_my','shopee_sg','shopee_ph','shopee_vn','shopee_id','shopee_tw','shopee_br','shopee_mx','lazada_my','lazada_id','walmart_us','decathlon_pl','allegro_pl','tiki_vn','aliexpress','banggood','dhgate','vevor'];
+const AFF_N={shopee_th:'Shopee TH',shopee_my:'Shopee MY',shopee_sg:'Shopee SG',shopee_ph:'Shopee PH',shopee_vn:'Shopee VN',shopee_id:'Shopee ID',shopee_tw:'Shopee TW',shopee_br:'Shopee BR',shopee_mx:'Shopee MX',lazada_my:'Lazada MY',lazada_id:'Lazada ID',walmart_us:'Walmart US',decathlon_pl:'Decathlon PL',allegro_pl:'Allegro PL',tiki_vn:'Tiki VN',aliexpress:'AliExpress 🌐',banggood:'Banggood 🌐',dhgate:'DHgate 🌐',vevor:'VEVOR 🌐'};
 const VIEWS={
  async overview(v){
   const o=await api('GET','overview');const subs={};(o.subscriptions||[]).forEach(s=>subs[s.plan_id]=(subs[s.plan_id]||0)+s.n);
