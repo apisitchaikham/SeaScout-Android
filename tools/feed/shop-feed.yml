@@ -1,0 +1,37 @@
+name: Shop feed (Admitad AliExpress products for the analysis tab)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 20 * * *'   # 03:23 Bangkok, once a day
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shop-feed
+  cancel-in-progress: false
+
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build shop_feed.json from the Admitad feed
+        env:
+          ADMITAD_FEED_URL: ${{ secrets.ADMITAD_FEED_URL }}
+        run: node tools/feed/build_feed.mjs
+      - name: Commit
+        run: |
+          git config user.name "seascout-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/shop_feed_report.json
+          [ -f www/media/shop_feed.json ] && git add www/media/shop_feed.json
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "Shop feed updated"
+          git pull --rebase origin main
+          git push
